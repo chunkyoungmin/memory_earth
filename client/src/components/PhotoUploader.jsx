@@ -1,20 +1,28 @@
 import { useState, useRef } from 'react'
 import axios from 'axios'
+import TripSelector from './TripSelector'
 
 export default function PhotoUploader({ onUploaded }) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState(null)
+  const [pendingFile, setPendingFile] = useState(null)
   const fileInputRef = useRef()
 
-  async function handleFileChange(e) {
+  function handleFileChange(e) {
     const file = e.target.files?.[0]
     if (!file) return
+    setPendingFile(file)
+    e.target.value = ''
+  }
 
+  async function doUpload(tripId) {
+    if (!pendingFile) return
     setUploading(true)
     setError(null)
 
     const formData = new FormData()
-    formData.append('photo', file)
+    formData.append('photo', pendingFile)
+    if (tripId) formData.append('tripId', tripId)
 
     try {
       const res = await axios.post('/api/photos/upload', formData, {
@@ -26,7 +34,7 @@ export default function PhotoUploader({ onUploaded }) {
       console.error(err)
     } finally {
       setUploading(false)
-      e.target.value = '' // 같은 파일 다시 선택 가능하도록 초기화
+      setPendingFile(null)
     }
   }
 
@@ -55,6 +63,13 @@ export default function PhotoUploader({ onUploaded }) {
         onChange={handleFileChange}
         className="hidden"
       />
+
+      {pendingFile && (
+        <TripSelector
+          onConfirm={(tripId) => doUpload(tripId)}
+          onClose={() => setPendingFile(null)}
+        />
+      )}
     </div>
   )
 }

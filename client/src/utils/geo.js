@@ -21,3 +21,16 @@ export function vector3ToLatLng(point) {
 
   return { lat, lng }
 }
+// 두 지점을 잇는 곡선(비행 경로 느낌) 좌표 배열 생성
+export function greatCircleArcPoints(latA, lngA, latB, lngB, radius, segments = 40) {
+  const pointA = latLngToVector3(latA, lngA, radius)
+  const pointB = latLngToVector3(latB, lngB, radius)
+
+  // 중간 지점을 살짝 바깥으로 띄워서 곡선 형태로 만듦
+  const midpoint = pointA.clone().add(pointB).multiplyScalar(0.5)
+  const distance = pointA.distanceTo(pointB)
+  midpoint.normalize().multiplyScalar(radius + distance * 0.3)
+
+  const curve = new THREE.QuadraticBezierCurve3(pointA, midpoint, pointB)
+  return curve.getPoints(segments)
+}

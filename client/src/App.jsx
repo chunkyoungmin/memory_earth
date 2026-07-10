@@ -1,21 +1,53 @@
-import { useState } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
+import axios from 'axios'
 import Globe from './components/Globe'
 import Sidebar from './components/Sidebar'
 import HamburgerButton from './components/HamburgerButton'
 import PhotoUploader from './components/PhotoUploader'
+import TripsPage from './pages/TripsPage'
+import Timeline from './components/Timeline'
+import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
+import AdminPage from './pages/AdminPage'
 
-function Home() {
+
+const REPLAY_STEP_MS = 3000 // 핀 하나당 머무는 시간
+
+function Home({ activeTripId }) {
   const { photos, addOrUpdatePhoto, setPhotoLocation } = usePhotos()
   const [placingPhotoId, setPlacingPhotoId] = useState(null)
+  const [tripPhotos, setTripPhotos] = useState(null)
+  const [selectedYear, setSelectedYear] = useState(null)
+  const [replaying, setReplaying] = useState(false)
+  const [replayIndex, setReplayIndex] = useState(0)
+
+  useEffect(() => {
+    if (!activeTripId) {
+      setTripPhotos(null)
+      return
+    }
+    axios.get(`/api/trips/${activeTripId}/photos`).then((res) => setTripPhotos(res.data.photos))
+  }, [activeTripId])
+
+  // 촬영시간 순 정렬 (GPS 있는 사진만 - Replay 대상)
+  const chronoPhotos = useMemo(
+    () =>
+      [...photos]
+        .filter((p) => p.latitude != null && p.taken_at)
+        .sort((a, b) => new Date(a.taken_at) - new Date(b.taken_at)),
+    [photos]
+  )
+
+  // Timeline 필터링된 핀 목록
+  const visiblePhotos = useMemo(() => {
+    if (selectedYear == null) return photos
+    return photos.filter((p) => !p.taken_at || new Date(p.taken_at).getFullYear() <= selectedYear)
+  }, [photos, selectedYear])
 
   function handleUploaded(data) {
     addOrUpdatePhoto(data.photo)
-    if (!data.hasGps) {
-      // GPS 없는 사진 -> 위치 지정 모드로 전환
-      setPlacingPhotoId(data.photo.id)
-    }
+    if (!data.hasGps) setPlacingPhotoId(data.photo.id)
   }
 
   async function handleLocationPick(lat, lng) {
@@ -24,18 +56,57 @@ function Home() {
     setPlacingPhotoId(null)
   }
 
+  const startReplay = useCallback(() => {
+    if (chronoPhotos.length === 0) return
+    setReplaying(true)
+    setReplayIndex(0)
+  }, [chronoPhotos])
+
+  // Replay 진행 타이머
+  useEffect(() => {
+    if (!replaying) return
+    if (replayIndex >= chronoPhotos.length) {
+      setReplaying(false)
+      return
+    }
+    const timer = setTimeout(() => {
+      setReplayIndex((i) => i + 1)
+    }, REPLAY_STEP_MS)
+    return () => clearTimeout(timer)
+  }, [replaying, replayIndex, chronoPhotos.length])
+
+  const currentReplayPhoto = replaying ? chronoPhotos[replayIndex] : null
+  const focusLatLng = currentReplayPhoto
+    ? { lat: currentReplayPhoto.latitude, lng: currentReplayPhoto.longitude }
+    : null
+
   return (
     <div className="w-screen h-screen relative overflow-hidden bg-earth-bg">
       <Globe
-        photos={photos}
+        photos={replaying ? [currentReplayPhoto].filter(Boolean) : visiblePhotos}
         placingMode={!!placingPhotoId}
         onLocationPick={handleLocationPick}
+        tripPhotos={tripPhotos}
+        focusLatLng={focusLatLng}
       />
 
-      <div className="pointer-events-none absolute inset-x-0 bottom-24 flex flex-col items-center gap-1">
-        <h1 className="text-white text-2xl font-semibold tracking-tight">Earth Memory</h1>
-        <p className="text-white/50 text-sm">Every Photo Has A Place.</p>
-      </div>
+      {!replaying && (
+        <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1">
+          <h1 className="text-white text-2xl font-semibold tracking-tight">Earth Memory</h1>
+          <p className="text-white/50 text-sm">Every Photo Has A Place.</p>
+        </div>
+      )}
+
+      {replaying && currentReplayPhoto && (
+        <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1">
+          <p className="text-white text-3xl font-semibold">
+            {new Date(currentReplayPhoto.taken_at).getFullYear()}
+          </p>
+          <p className="text-white/70 text-sm">
+            {currentReplayPhoto.title || currentReplayPhoto.city || '어딘가'}
+          </p>
+        </div>
+      )}
 
       {placingPhotoId && (
         <div className="absolute top-20 inset-x-0 flex justify-center pointer-events-none">
@@ -45,6 +116,14 @@ function Home() {
         </div>
       )}
 
+      <ReplayButton
+        onClick={startReplay}
+        disabled={chronoPhotos.length === 0 || replaying}
+        isReplaying={replaying}
+      />
+
+      {!replaying && <Timeline photos={photos} selectedYear={selectedYear} onChange={setSelectedYear} />}
+
       <PhotoUploader onUploaded={handleUploaded} />
     </div>
   )
@@ -52,6 +131,7 @@ function Home() {
 
 export default function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [activeTripId, setActiveTripId] = useState(null)
   const navigate = useNavigate()
 
   return (
@@ -64,12 +144,22 @@ export default function App() {
       />
 
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home activeTripId={activeTripId} />} />
         <Route path="/gallery" element={<div className="text-white p-10">전체 갤러리 (준비 중)</div>} />
-        <Route path="/trips" element={<div className="text-white p-10">여행 (준비 중)</div>} />
+        <Route
+          path="/trips"
+          element={
+            <TripsPage
+              onSelectTrip={(id) => {
+                setActiveTripId(id)
+                navigate('/')
+              }}
+            />
+          }
+        />
         <Route path="/favorites" element={<div className="text-white p-10">즐겨찾기 (준비 중)</div>} />
         <Route path="/profile" element={<div className="text-white p-10">프로필 (준비 중)</div>} />
-        <Route path="/settings" element={<div className="text-white p-10">설정 (준비 중)</div>} />
+        <Route path="/settings" element={<AdminPage />} />
       </Routes>
     </>
   )
