@@ -1,5 +1,5 @@
-import { useRef, useMemo } from 'react'
-import { Canvas, useFrame, useLoader } from '@react-three/fiber'
+import { useRef, useMemo, useState, useCallback } from 'react'
+import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 import {
@@ -8,8 +8,9 @@ import {
   atmosphereVertexShader,
   atmosphereFragmentShader,
 } from '../shaders/earthShaders'
+import Pin from './Pin'
+import { vector3ToLatLng } from '../utils/geo'
 
-// 실사 지구 텍스처 (개발용 — 배포 전 /public/textures로 자체 호스팅 권장)
 const TEXTURES = {
   day: 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
   night: 'https://threejs.org/examples/textures/planets/earth_lights_2048.png',
@@ -17,7 +18,7 @@ const TEXTURES = {
   clouds: 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png',
 }
 
-function Earth() {
+function Earth({ photos, placingMode, onLocationPick }) {
   const earthRef = useRef()
   const cloudsRef = useRef()
 
@@ -58,18 +59,26 @@ function Earth() {
   )
 
   useFrame((_, delta) => {
-    // 구름이 지구보다 살짝 빠르게 자전 -> 패럴랙스 느낌
     if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.015
   })
 
+  // 위치 지정 모드일 때 지구본 클릭 -> 위도/경도로 변환해서 상위로 전달
+  const handleEarthClick = useCallback(
+    (e) => {
+      if (!placingMode) return
+      e.stopPropagation()
+      const { lat, lng } = vector3ToLatLng(e.point)
+      onLocationPick?.(lat, lng)
+    },
+    [placingMode, onLocationPick]
+  )
+
   return (
     <group>
-      {/* 지구 본체 */}
-      <mesh ref={earthRef} material={earthMaterial}>
+      <mesh ref={earthRef} material={earthMaterial} onClick={handleEarthClick}>
         <sphereGeometry args={[2, 64, 64]} />
       </mesh>
 
-      {/* 구름 레이어 */}
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[2.02, 64, 64]} />
         <meshStandardMaterial
@@ -81,27 +90,29 @@ function Earth() {
         />
       </mesh>
 
-      {/* 대기 글로우 */}
       <mesh material={atmosphereMaterial} scale={1.08}>
         <sphereGeometry args={[2, 64, 64]} />
       </mesh>
+
+      {/* 핀들 */}
+      {photos.map((photo) => (
+        <Pin key={photo.id} photo={photo} radius={2} />
+      ))}
     </group>
   )
 }
 
-export default function Globe() {
+export default function Globe({ photos = [], placingMode = false, onLocationPick }) {
   return (
     <Canvas
       camera={{ position: [0, 0, 6], fov: 45 }}
       gl={{ antialias: true }}
-      style={{ background: 'transparent' }}
+      style={{ background: 'transparent', cursor: placingMode ? 'crosshair' : 'default' }}
     >
-      {/* 태양광 (방향광) */}
       <directionalLight position={[5, 2, 5]} intensity={2.2} color="#fff4e0" />
-      {/* 낮은 주변광 - 밤 쪽이 완전히 검게 안 보이도록 */}
       <ambientLight intensity={0.15} />
 
-      <Earth />
+      <Earth photos={photos} placingMode={placingMode} onLocationPick={onLocationPick} />
 
       <OrbitControls
         enablePan={false}
