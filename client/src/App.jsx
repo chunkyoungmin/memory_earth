@@ -6,7 +6,8 @@ import Sidebar from './components/Sidebar'
 import PhotoUploader from './components/PhotoUploader'
 import TripsPage from './pages/TripsPage'
 import AdminPage from './pages/AdminPage'
-import Timeline from './components/Timeline'
+import GalleryPage from './pages/GalleryPage'
+import TripStorySlider from './components/TripStorySlider'
 import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
 
@@ -16,7 +17,7 @@ function Home({ activeTripId }) {
   const { photos, addOrUpdatePhoto, setPhotoLocation } = usePhotos()
   const [placingPhotoId, setPlacingPhotoId] = useState(null)
   const [tripPhotos, setTripPhotos] = useState(null)
-  const [selectedYear, setSelectedYear] = useState(null)
+  const [storyIndex, setStoryIndex] = useState(0)
   const [replaying, setReplaying] = useState(false)
   const [replayIndex, setReplayIndex] = useState(0)
 
@@ -26,7 +27,13 @@ function Home({ activeTripId }) {
       return
     }
     axios.get(`/api/trips/${activeTripId}/photos`).then((res) => setTripPhotos(res.data.photos))
+    setStoryIndex(0)
   }, [activeTripId])
+
+  const tripPhotosWithGps = useMemo(
+    () => (tripPhotos || []).filter((p) => p.latitude != null && p.longitude != null),
+    [tripPhotos]
+  )
 
   const chronoPhotos = useMemo(
     () =>
@@ -35,11 +42,6 @@ function Home({ activeTripId }) {
         .sort((a, b) => new Date(a.taken_at) - new Date(b.taken_at)),
     [photos]
   )
-
-  const visiblePhotos = useMemo(() => {
-    if (selectedYear == null) return photos
-    return photos.filter((p) => !p.taken_at || new Date(p.taken_at).getFullYear() <= selectedYear)
-  }, [photos, selectedYear])
 
   function handleUploaded(data) {
     addOrUpdatePhoto(data.photo)
@@ -64,28 +66,30 @@ function Home({ activeTripId }) {
       setReplaying(false)
       return
     }
-    const timer = setTimeout(() => {
-      setReplayIndex((i) => i + 1)
-    }, REPLAY_STEP_MS)
+    const timer = setTimeout(() => setReplayIndex((i) => i + 1), REPLAY_STEP_MS)
     return () => clearTimeout(timer)
   }, [replaying, replayIndex, chronoPhotos.length])
 
   const currentReplayPhoto = replaying ? chronoPhotos[replayIndex] : null
+  const storyPhoto = !replaying && tripPhotosWithGps.length > 0 ? tripPhotosWithGps[storyIndex] : null
+
   const focusLatLng = currentReplayPhoto
     ? { lat: currentReplayPhoto.latitude, lng: currentReplayPhoto.longitude }
+    : storyPhoto
+    ? { lat: storyPhoto.latitude, lng: storyPhoto.longitude }
     : null
 
   return (
     <div className="w-full h-screen relative overflow-hidden bg-earth-bg">
       <Globe
-        photos={replaying ? [currentReplayPhoto].filter(Boolean) : visiblePhotos}
+        photos={replaying ? [currentReplayPhoto].filter(Boolean) : photos}
         placingMode={!!placingPhotoId}
         onLocationPick={handleLocationPick}
         tripPhotos={tripPhotos}
         focusLatLng={focusLatLng}
       />
 
-      {!replaying && (
+      {!replaying && !tripPhotos && (
         <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1">
           <h1 className="text-white text-2xl font-semibold tracking-tight">Earth Memory</h1>
           <p className="text-white/50 text-sm">Every Photo Has A Place.</p>
@@ -117,7 +121,9 @@ function Home({ activeTripId }) {
         isReplaying={replaying}
       />
 
-      {!replaying && <Timeline photos={photos} selectedYear={selectedYear} onChange={setSelectedYear} />}
+      {!replaying && tripPhotosWithGps.length > 0 && (
+        <TripStorySlider photos={tripPhotosWithGps} index={storyIndex} onChange={setStoryIndex} />
+      )}
 
       <PhotoUploader onUploaded={handleUploaded} />
     </div>
@@ -130,12 +136,17 @@ export default function App() {
 
   return (
     <>
-      <Sidebar onNavigate={(path) => navigate(path)} />
+      <Sidebar
+        onNavigate={(path) => {
+          if (path === '/') setActiveTripId(null) // 지도 다시 누르면 여행 모드 해제
+          navigate(path)
+        }}
+      />
 
       <div className="pl-64">
         <Routes>
           <Route path="/" element={<Home activeTripId={activeTripId} />} />
-          <Route path="/gallery" element={<div className="text-white p-10">전체 갤러리 (준비 중)</div>} />
+          <Route path="/gallery" element={<GalleryPage />} />
           <Route
             path="/trips"
             element={
