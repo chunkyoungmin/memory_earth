@@ -9,6 +9,6 @@ html, body, #root {
 }
 
 body {
-  background: #0a0a0c;
+  background: radial-gradient(circle at 50% 40%, #1c1c1e 0%, #000000 75%);
   color: #f5f5f7;
 }
