@@ -3,16 +3,14 @@ import { Routes, Route, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Globe from './components/Globe'
 import Sidebar from './components/Sidebar'
-import HamburgerButton from './components/HamburgerButton'
 import PhotoUploader from './components/PhotoUploader'
 import TripsPage from './pages/TripsPage'
+import AdminPage from './pages/AdminPage'
 import Timeline from './components/Timeline'
 import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
-import AdminPage from './pages/AdminPage'
 
-
-const REPLAY_STEP_MS = 3000 // 핀 하나당 머무는 시간
+const REPLAY_STEP_MS = 3000
 
 function Home({ activeTripId }) {
   const { photos, addOrUpdatePhoto, setPhotoLocation } = usePhotos()
@@ -30,7 +28,6 @@ function Home({ activeTripId }) {
     axios.get(`/api/trips/${activeTripId}/photos`).then((res) => setTripPhotos(res.data.photos))
   }, [activeTripId])
 
-  // 촬영시간 순 정렬 (GPS 있는 사진만 - Replay 대상)
   const chronoPhotos = useMemo(
     () =>
       [...photos]
@@ -39,7 +36,6 @@ function Home({ activeTripId }) {
     [photos]
   )
 
-  // Timeline 필터링된 핀 목록
   const visiblePhotos = useMemo(() => {
     if (selectedYear == null) return photos
     return photos.filter((p) => !p.taken_at || new Date(p.taken_at).getFullYear() <= selectedYear)
@@ -62,7 +58,6 @@ function Home({ activeTripId }) {
     setReplayIndex(0)
   }, [chronoPhotos])
 
-  // Replay 진행 타이머
   useEffect(() => {
     if (!replaying) return
     if (replayIndex >= chronoPhotos.length) {
@@ -81,7 +76,7 @@ function Home({ activeTripId }) {
     : null
 
   return (
-    <div className="w-screen h-screen relative overflow-hidden bg-earth-bg">
+    <div className="w-full h-screen relative overflow-hidden bg-earth-bg">
       <Globe
         photos={replaying ? [currentReplayPhoto].filter(Boolean) : visiblePhotos}
         placingMode={!!placingPhotoId}
@@ -130,37 +125,33 @@ function Home({ activeTripId }) {
 }
 
 export default function App() {
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeTripId, setActiveTripId] = useState(null)
   const navigate = useNavigate()
 
   return (
     <>
-      <HamburgerButton onClick={() => setSidebarOpen(true)} isOpen={sidebarOpen} />
-      <Sidebar
-        isOpen={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-        onNavigate={(path) => navigate(path)}
-      />
+      <Sidebar onNavigate={(path) => navigate(path)} />
 
-      <Routes>
-        <Route path="/" element={<Home activeTripId={activeTripId} />} />
-        <Route path="/gallery" element={<div className="text-white p-10">전체 갤러리 (준비 중)</div>} />
-        <Route
-          path="/trips"
-          element={
-            <TripsPage
-              onSelectTrip={(id) => {
-                setActiveTripId(id)
-                navigate('/')
-              }}
-            />
-          }
-        />
-        <Route path="/favorites" element={<div className="text-white p-10">즐겨찾기 (준비 중)</div>} />
-        <Route path="/profile" element={<div className="text-white p-10">프로필 (준비 중)</div>} />
-        <Route path="/settings" element={<AdminPage />} />
-      </Routes>
+      <div className="pl-64">
+        <Routes>
+          <Route path="/" element={<Home activeTripId={activeTripId} />} />
+          <Route path="/gallery" element={<div className="text-white p-10">전체 갤러리 (준비 중)</div>} />
+          <Route
+            path="/trips"
+            element={
+              <TripsPage
+                onSelectTrip={(id) => {
+                  setActiveTripId(id)
+                  navigate('/')
+                }}
+              />
+            }
+          />
+          <Route path="/favorites" element={<div className="text-white p-10">즐겨찾기 (준비 중)</div>} />
+          <Route path="/profile" element={<div className="text-white p-10">프로필 (준비 중)</div>} />
+          <Route path="/settings" element={<AdminPage />} />
+        </Routes>
+      </div>
     </>
   )
 }
