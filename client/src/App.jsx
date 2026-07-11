@@ -130,6 +130,7 @@ function Home({ activeTripId }) {
       )}
 
       <PhotoUploader onUploaded={handleUploaded} />
+      <GithubButton />
     </div>
   )
 }
@@ -142,7 +143,7 @@ export default function App() {
     <>
       <Sidebar
         onNavigate={(path) => {
-          if (path === '/') setActiveTripId(null) // 지도 다시 누르면 여행 모드 해제
+          if (path === '/') setActiveTripId(null)
           navigate(path)
         }}
       />
@@ -166,8 +167,6 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<AdminPage />} />
         </Routes>
-        <PhotoUploader onUploaded={handleUploaded} />
-        <GithubButton />
       </div>
     </>
   )
