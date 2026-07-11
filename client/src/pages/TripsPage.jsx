@@ -18,6 +18,12 @@ export default function TripsPage({ onSelectTrip }) {
     const res = await axios.get(`/api/trips/${trip.id}/photos`)
     setTripPhotos(res.data.photos)
     setExpandedTripId(trip.id)
+    async function handleDelete(tripId, e) {
+      e.stopPropagation()
+      if (!confirm('이 여행을 삭제할까요? 사진은 삭제되지 않고 여행에서만 빠집니다.')) return
+      await axios.delete(`/api/trips/${tripId}`)
+      setTrips((prev) => prev.filter((t) => t.id !== tripId))
+}
   }
 
   function movePhoto(index, direction) {
@@ -58,6 +64,12 @@ export default function TripsPage({ onSelectTrip }) {
                   className="px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs"
                 >
                   {expandedTripId === trip.id ? '닫기' : '순서 편집'}
+                </button>
+                <button
+                  onClick={(e) => handleDelete(trip.id, e)}
+                  className="px-3 py-1.5 rounded-lg bg-red-500/20 text-red-400 text-xs hover:bg-red-500/30"
+                >
+                  삭제
                 </button>
               </div>
             </div>

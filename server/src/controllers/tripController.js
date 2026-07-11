@@ -80,3 +80,17 @@ export async function reorderTripPhotos(req, res) {
     res.status(500).json({ error: '여행 순서 변경 중 오류가 발생했습니다.' })
   }
 }
+export async function deleteTrip(req, res) {
+  try {
+    const { id } = req.params
+    const result = await pool.query('DELETE FROM trips WHERE id = $1 RETURNING *', [id])
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '여행을 찾을 수 없습니다.' })
+    }
+    // 사진은 삭제되지 않고 trip_id만 NULL로 남습니다 (DB 스키마의 ON DELETE SET NULL)
+    res.json({ success: true })
+  } catch (err) {
+    console.error('여행 삭제 실패:', err)
+    res.status(500).json({ error: '여행 삭제 중 오류가 발생했습니다.' })
+  }
+}

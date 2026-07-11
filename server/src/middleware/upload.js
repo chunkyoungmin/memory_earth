@@ -1,20 +1,15 @@
 import multer from 'multer'
 import path from 'path'
 import fs from 'fs'
-import dotenv from 'dotenv'
+import { UPLOAD_DIR } from '../config/paths.js'
 
-dotenv.config()
-
-const uploadDir = process.env.UPLOAD_DIR || '../uploads'
-
-// 업로드 폴더 없으면 생성
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true })
+if (!fs.existsSync(UPLOAD_DIR)) {
+  fs.mkdirSync(UPLOAD_DIR, { recursive: true })
 }
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir)
+    cb(null, UPLOAD_DIR)
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`
@@ -35,5 +30,5 @@ function fileFilter(req, file, cb) {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 25 * 1024 * 1024 }, // 25MB
+  limits: { fileSize: 25 * 1024 * 1024 },
 })
