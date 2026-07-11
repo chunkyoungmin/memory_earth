@@ -95,3 +95,20 @@ export async function listPhotos(req, res) {
     res.status(500).json({ error: '사진 목록 조회 중 오류가 발생했습니다.' })
   }
 }
+
+export async function toggleFavorite(req, res) {
+  try {
+    const { id } = req.params
+    const result = await pool.query(
+      `UPDATE photos SET is_favorite = NOT is_favorite WHERE id = $1 RETURNING *`,
+      [id]
+    )
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: '사진을 찾을 수 없습니다.' })
+    }
+    res.json({ photo: result.rows[0] })
+  } catch (err) {
+    console.error('즐겨찾기 변경 실패:', err)
+    res.status(500).json({ error: '즐겨찾기 변경 중 오류가 발생했습니다.' })
+  }
+}

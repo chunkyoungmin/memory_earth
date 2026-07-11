@@ -23,21 +23,31 @@ export function usePhotos() {
   const addOrUpdatePhoto = useCallback((photo) => {
     setPhotos((prev) => {
       const exists = prev.some((p) => p.id === photo.id)
-      if (exists) {
-        return prev.map((p) => (p.id === photo.id ? photo : p))
-      }
+      if (exists) return prev.map((p) => (p.id === photo.id ? photo : p))
       return [...prev, photo]
     })
   }, [])
 
-  const setPhotoLocation = useCallback(async (id, lat, lng) => {
-    const res = await axios.patch(`/api/photos/${id}/location`, {
-      latitude: lat,
-      longitude: lng,
-    })
-    addOrUpdatePhoto(res.data.photo)
-    return res.data.photo
-  }, [addOrUpdatePhoto])
+  const setPhotoLocation = useCallback(
+    async (id, lat, lng) => {
+      const res = await axios.patch(`/api/photos/${id}/location`, {
+        latitude: lat,
+        longitude: lng,
+      })
+      addOrUpdatePhoto(res.data.photo)
+      return res.data.photo
+    },
+    [addOrUpdatePhoto]
+  )
 
-  return { photos, loading, addOrUpdatePhoto, setPhotoLocation }
+  const toggleFavorite = useCallback(
+    async (id) => {
+      const res = await axios.patch(`/api/photos/${id}/favorite`)
+      addOrUpdatePhoto(res.data.photo)
+      return res.data.photo
+    },
+    [addOrUpdatePhoto]
+  )
+
+  return { photos, loading, addOrUpdatePhoto, setPhotoLocation, toggleFavorite }
 }

@@ -11,10 +11,11 @@ import TripStorySlider from './components/TripStorySlider'
 import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
 
+
 const REPLAY_STEP_MS = 3000
 
 function Home({ activeTripId }) {
-  const { photos, addOrUpdatePhoto, setPhotoLocation } = usePhotos()
+  const { photos, addOrUpdatePhoto, setPhotoLocation, toggleFavorite } = usePhotos()
   const [placingPhotoId, setPlacingPhotoId] = useState(null)
   const [tripPhotos, setTripPhotos] = useState(null)
   const [storyIndex, setStoryIndex] = useState(0)
@@ -87,6 +88,7 @@ function Home({ activeTripId }) {
         onLocationPick={handleLocationPick}
         tripPhotos={tripPhotos}
         focusLatLng={focusLatLng}
+        onToggleFavorite={toggleFavorite}
       />
 
       {!replaying && !tripPhotos && (

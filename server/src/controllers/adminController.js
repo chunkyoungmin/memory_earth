@@ -58,3 +58,27 @@ export async function deletePhoto(req, res) {
     res.status(500).json({ error: '사진 삭제 중 오류가 발생했습니다.' })
   }
 }
+
+export async function getProfile(req, res) {
+  try {
+    const userId = req.query.userId || 1
+    const [user, photoCount, tripCount] = await Promise.all([
+      pool.query('SELECT id, email, display_name, created_at FROM users WHERE id = $1', [userId]),
+      pool.query('SELECT COUNT(*) FROM photos WHERE user_id = $1', [userId]),
+      pool.query('SELECT COUNT(*) FROM trips WHERE user_id = $1', [userId]),
+    ])
+
+    if (user.rows.length === 0) {
+      return res.status(404).json({ error: '유저를 찾을 수 없습니다.' })
+    }
+
+    res.json({
+      user: user.rows[0],
+      photoCount: Number(photoCount.rows[0].count),
+      tripCount: Number(tripCount.rows[0].count),
+    })
+  } catch (err) {
+    console.error('프로필 조회 실패:', err)
+    res.status(500).json({ error: '프로필 조회 중 오류가 발생했습니다.' })
+  }
+}

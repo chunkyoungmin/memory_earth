@@ -38,7 +38,7 @@ function CameraRig({ focusLatLng, controlsRef }) {
   return null
 }
 
-function Earth({ photos, placingMode, onLocationPick, tripPhotos }) {
+function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavorite }) {
   const earthRef = useRef()
   const cloudsRef = useRef()
 
@@ -114,7 +114,7 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos }) {
       </mesh>
 
       {photos.map((photo) => (
-        <Pin key={photo.id} photo={photo} radius={2} />
+        <Pin key={photo.id} photo={photo} radius={2} onToggleFavorite={onToggleFavorite} />
       ))}
 
       {tripPhotos && <TripPath photos={tripPhotos} radius={2} />}
@@ -128,6 +128,7 @@ export default function Globe({
   onLocationPick,
   tripPhotos = null,
   focusLatLng = null,
+  onToggleFavorite,
 }) {
   const controlsRef = useRef()
 
@@ -140,7 +141,13 @@ export default function Globe({
       <directionalLight position={[5, 2, 5]} intensity={2.2} color="#fff4e0" />
       <ambientLight intensity={0.15} />
 
-      <Earth photos={photos} placingMode={placingMode} onLocationPick={onLocationPick} tripPhotos={tripPhotos} />
+      <Earth
+        photos={photos}
+        placingMode={placingMode}
+        onLocationPick={onLocationPick}
+        tripPhotos={tripPhotos}
+        onToggleFavorite={onToggleFavorite}
+      />
 
       <CameraRig focusLatLng={focusLatLng} controlsRef={controlsRef} />
 
@@ -149,7 +156,7 @@ export default function Globe({
         enabled={!focusLatLng}
         enablePan={false}
         enableZoom
-        minDistance={3}
+        minDistance={2.3}
         maxDistance={12}
         rotateSpeed={0.5}
         zoomSpeed={0.6}
