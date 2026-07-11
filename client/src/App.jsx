@@ -160,8 +160,8 @@ export default function App() {
               />
             }
           />
-          <Route path="/favorites" element={<div className="text-white p-10">즐겨찾기 (준비 중)</div>} />
-          <Route path="/profile" element={<div className="text-white p-10">프로필 (준비 중)</div>} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<AdminPage />} />
         </Routes>
       </div>
