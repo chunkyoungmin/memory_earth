@@ -12,7 +12,7 @@ import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
 import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
-
+import GithubButton from './components/GithubButton'
 
 const REPLAY_STEP_MS = 3000
 
@@ -166,6 +166,8 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<AdminPage />} />
         </Routes>
+        <PhotoUploader onUploaded={handleUploaded} />
+        <GithubButton />
       </div>
     </>
   )
