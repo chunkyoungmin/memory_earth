@@ -10,6 +10,8 @@ import GalleryPage from './pages/GalleryPage'
 import TripStorySlider from './components/TripStorySlider'
 import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
+import FavoritesPage from './pages/FavoritesPage'
+import ProfilePage from './pages/ProfilePage'
 
 
 const REPLAY_STEP_MS = 3000
