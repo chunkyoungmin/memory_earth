@@ -12,7 +12,6 @@ import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
 import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
-import GithubButton from './components/GithubButton'
 
 const REPLAY_STEP_MS = 3000
 
@@ -128,9 +127,6 @@ function Home({ activeTripId }) {
       {!replaying && tripPhotosWithGps.length > 0 && (
         <TripStorySlider photos={tripPhotosWithGps} index={storyIndex} onChange={setStoryIndex} />
       )}
-
-      <PhotoUploader onUploaded={handleUploaded} />
-      <GithubButton />
     </div>
   )
 }
