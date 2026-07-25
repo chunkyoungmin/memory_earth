@@ -3,7 +3,7 @@ import { pool } from '../config/db.js'
 // 여행 목록 조회 (사진 개수 포함)
 export async function listTrips(req, res) {
   try {
-    const userId = req.query.userId || 1
+    const userId = req.user.id
     const result = await pool.query(
       `SELECT trips.*, COUNT(photos.id) AS photo_count
        FROM trips
@@ -23,7 +23,8 @@ export async function listTrips(req, res) {
 // 새 여행 생성
 export async function createTrip(req, res) {
   try {
-    const { title, userId = 1 } = req.body
+    const { title } = req.body
+    const userId = req.user.id
     if (!title) {
       return res.status(400).json({ error: '여행 제목이 필요합니다.' })
     }

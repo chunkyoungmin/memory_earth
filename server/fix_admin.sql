@@ -1,0 +1,1 @@
+UPDATE users SET password_hash = '$2b$12$BGrWaPhZWPC5o/XVF5w/P.dJU4MAiPlcnvSB0Y5jdwSpUfGHk/WXG' WHERE email = 'admin@earthmemory.local';

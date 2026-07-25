@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { upload } from '../middleware/upload.js'
+import { requireAuth } from '../middleware/auth.js'
 import {
   uploadPhoto,
   setManualLocation,
@@ -10,8 +11,8 @@ import {
 const router = Router()
 
 router.get('/', listPhotos)
-router.post('/upload', upload.single('photo'), uploadPhoto)
-router.patch('/:id/location', setManualLocation)
-router.patch('/:id/favorite', toggleFavorite)
+router.post('/upload', requireAuth, upload.single('photo'), uploadPhoto)
+router.patch('/:id/location', requireAuth, setManualLocation)
+router.patch('/:id/favorite', requireAuth, toggleFavorite)
 
 export default router

@@ -9,7 +9,8 @@ export async function uploadPhoto(req, res) {
     }
 
     const filePath = req.file.path
-    const { tripId, title, userId = 1 } = req.body // userId는 인증 붙기 전까지 임시 고정값
+    const { tripId, title } = req.body
+    const userId = req.user.id
 
     // EXIF에서 GPS와 촬영시간 추출
     let gps = null

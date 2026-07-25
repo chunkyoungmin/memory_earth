@@ -11,7 +11,7 @@ export default function ProfilePage() {
   if (!data) return <div className="min-h-screen bg-earth-bg text-white p-10">불러오는 중...</div>
 
   return (
-    <div className="min-h-screen bg-earth-bg text-white p-6 pt-10">
+    <div className="min-h-screen bg-earth-bg text-white p-6 pt-10 relative">
       <h1 className="text-xl font-semibold mb-6">👤 프로필</h1>
 
       <div className="max-w-sm p-5 rounded-2xl bg-white/5 border border-white/10">
@@ -36,6 +36,10 @@ export default function ProfilePage() {
           가입일: {new Date(data.user.created_at).toLocaleDateString('ko-KR')}
         </p>
       </div>
+
+      <p className="absolute bottom-4 right-4 text-white/20 text-[10px]">
+        Earth textures: solarsystemscope.com (CC BY 4.0)
+      </p>
     </div>
   )
 }

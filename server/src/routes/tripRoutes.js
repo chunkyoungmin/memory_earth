@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { requireAuth } from '../middleware/auth.js'
 import {
   listTrips,
   createTrip,
@@ -9,10 +10,10 @@ import {
 
 const router = Router()
 
-router.get('/', listTrips)
-router.post('/', createTrip)
+router.get('/', requireAuth, listTrips)
+router.post('/', requireAuth, createTrip)
 router.get('/:id/photos', getTripPhotos)
-router.patch('/:id/reorder', reorderTripPhotos)
-router.delete('/:id', deleteTrip)
+router.patch('/:id/reorder', requireAuth, reorderTripPhotos)
+router.delete('/:id', requireAuth, deleteTrip)
 
 export default router

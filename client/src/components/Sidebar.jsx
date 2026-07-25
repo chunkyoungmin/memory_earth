@@ -4,10 +4,10 @@ const MENU_ITEMS = [
   { icon: '🧳', label: '여행', path: '/trips' },
   { icon: '⭐', label: '즐겨찾기', path: '/favorites' },
   { icon: '👤', label: '프로필', path: '/profile' },
-  { icon: '⚙', label: '설정', path: '/settings' },
+  { icon: '⚙', label: '관리자', path: '/settings' },
 ]
 
-export default function Sidebar({ onNavigate }) {
+export default function Sidebar({ onNavigate, onLogout }) {
   return (
     <aside
       className="fixed top-0 left-0 h-screen w-64 bg-[#161618]/90 backdrop-blur-xl
@@ -32,6 +32,15 @@ export default function Sidebar({ onNavigate }) {
           </button>
         ))}
       </nav>
+      <div className="mt-auto px-3">
+        <button
+          onClick={onLogout}
+          className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/50
+                     hover:bg-white/10 hover:text-white transition-colors text-left text-sm"
+        >
+          🚪 로그아웃
+        </button>
+      </div>
     </aside>
   )
 }

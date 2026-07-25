@@ -12,6 +12,9 @@ import ReplayButton from './components/ReplayButton'
 import { usePhotos } from './hooks/usePhotos'
 import FavoritesPage from './pages/FavoritesPage'
 import ProfilePage from './pages/ProfilePage'
+import { useAuth } from './context/AuthContext'
+import LoginPage from './pages/LoginPage'
+import SignupPage from './pages/SignupPage'
 
 const REPLAY_STEP_MS = 3000
 
@@ -134,6 +137,25 @@ function Home({ activeTripId }) {
 export default function App() {
   const [activeTripId, setActiveTripId] = useState(null)
   const navigate = useNavigate()
+  const { user, loading, logout } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-earth-bg text-white flex items-center justify-center">
+        불러오는 중...
+      </div>
+    )
+  }
+
+  if (!user) {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/signup" element={<SignupPage />} />
+        <Route path="*" element={<LoginPage />} />
+      </Routes>
+    )
+  }
 
   return (
     <>
@@ -142,6 +164,7 @@ export default function App() {
           if (path === '/') setActiveTripId(null)
           navigate(path)
         }}
+        onLogout={logout}
       />
 
       <div className="pl-64">

@@ -4,6 +4,7 @@ import dotenv from 'dotenv'
 import photoRoutes from './routes/photoRoutes.js'
 import tripRoutes from './routes/tripRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
+import authRoutes from './routes/authRoutes.js'
 import { UPLOAD_DIR } from './config/paths.js'
 
 dotenv.config()
@@ -20,6 +21,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'earth-memory-server' })
 })
 
+app.use('/api/auth', authRoutes)
 app.use('/api/photos', photoRoutes)
 app.use('/api/trips', tripRoutes)
 app.use('/api/admin', adminRoutes)

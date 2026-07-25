@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback } from 'react'
+import { useRef, useMemo, useCallback, useEffect, useState } from 'react'
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
@@ -10,16 +10,17 @@ import {
 } from '../shaders/earthShaders'
 import Pin from './Pin'
 import TripPath from './TripPath'
+import CountryBorders from './CountryBorders'
 import { vector3ToLatLng, latLngToVector3 } from '../utils/geo'
+import { getSunDirection } from '../utils/sunPosition'
 
 const TEXTURES = {
-  day: 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg',
-  night: 'https://threejs.org/examples/textures/planets/earth_lights_2048.png',
-  specular: 'https://threejs.org/examples/textures/planets/earth_specular_2048.jpg',
-  clouds: 'https://threejs.org/examples/textures/planets/earth_clouds_1024.png',
+  day: '/textures/2k_earth_daymap.jpg',
+  night: '/textures/2k_earth_nightmap.jpg',
+  specular: '/textures/2k_earth_specular_map.jpg',
+  clouds: '/textures/2k_earth_clouds.jpg',
 }
 
-// 카메라를 특정 위/경도로 부드럽게 이동시키는 컨트롤러 (Memory Replay용)
 function CameraRig({ focusLatLng, controlsRef }) {
   const { camera } = useThree()
 
@@ -38,7 +39,7 @@ function CameraRig({ focusLatLng, controlsRef }) {
   return null
 }
 
-function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavorite }) {
+function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavorite, sunDirectionRef }) {
   const earthRef = useRef()
   const cloudsRef = useRef()
 
@@ -49,8 +50,6 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
     TEXTURES.clouds,
   ])
 
-  const sunDirection = useMemo(() => new THREE.Vector3(5, 2, 5).normalize(), [])
-
   const earthMaterial = useMemo(
     () =>
       new THREE.ShaderMaterial({
@@ -58,12 +57,12 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
           dayTexture: { value: dayMap },
           nightTexture: { value: nightMap },
           specularTexture: { value: specularMap },
-          sunDirection: { value: sunDirection },
+          sunDirection: { value: sunDirectionRef.current },
         },
         vertexShader: earthVertexShader,
         fragmentShader: earthFragmentShader,
       }),
-    [dayMap, nightMap, specularMap, sunDirection]
+    [dayMap, nightMap, specularMap, sunDirectionRef]
   )
 
   const atmosphereMaterial = useMemo(
@@ -95,8 +94,10 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
   return (
     <group>
       <mesh ref={earthRef} material={earthMaterial} onClick={handleEarthClick}>
-        <sphereGeometry args={[2, 64, 64]} />
+        <sphereGeometry args={[2, 128, 128]} />
       </mesh>
+
+      <CountryBorders radius={2} />
 
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[2.02, 64, 64]} />
@@ -122,6 +123,19 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
   )
 }
 
+// 실제 시각에 맞춰 태양광 위치를 계속 갱신하는 조명
+function SunLight({ sunDirectionRef }) {
+  const lightRef = useRef()
+
+  useFrame(() => {
+    if (lightRef.current) {
+      lightRef.current.position.copy(sunDirectionRef.current).multiplyScalar(5)
+    }
+  })
+
+  return <directionalLight ref={lightRef} intensity={2.2} color="#fff4e0" />
+}
+
 export default function Globe({
   photos = [],
   placingMode = false,
@@ -131,6 +145,15 @@ export default function Globe({
   onToggleFavorite,
 }) {
   const controlsRef = useRef()
+  const sunDirectionRef = useRef(getSunDirection())
+
+  // 1분마다 실제 태양 위치 갱신 (낮/밤 경계가 실시간으로 서서히 이동)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      sunDirectionRef.current.copy(getSunDirection())
+    }, 60000)
+    return () => clearInterval(interval)
+  }, [])
 
   return (
     <Canvas
@@ -138,7 +161,7 @@ export default function Globe({
       gl={{ antialias: true }}
       style={{ background: 'transparent', cursor: placingMode ? 'crosshair' : 'default' }}
     >
-      <directionalLight position={[5, 2, 5]} intensity={2.2} color="#fff4e0" />
+      <SunLight sunDirectionRef={sunDirectionRef} />
       <ambientLight intensity={0.15} />
 
       <Earth
@@ -147,6 +170,7 @@ export default function Globe({
         onLocationPick={onLocationPick}
         tripPhotos={tripPhotos}
         onToggleFavorite={onToggleFavorite}
+        sunDirectionRef={sunDirectionRef}
       />
 
       <CameraRig focusLatLng={focusLatLng} controlsRef={controlsRef} />
@@ -156,7 +180,7 @@ export default function Globe({
         enabled={!focusLatLng}
         enablePan={false}
         enableZoom
-        minDistance={2.3}
+        minDistance={2.6}
         maxDistance={12}
         rotateSpeed={0.5}
         zoomSpeed={0.6}
