@@ -1,7 +1,11 @@
 import pg from 'pg'
 import dotenv from 'dotenv'
+import dns from 'dns'
 
 dotenv.config()
+
+// Node.js가 IPv6보다 IPv4를 우선 사용하도록 설정 (일부 네트워크 환경에서 IPv6 조회 실패 방지)
+dns.setDefaultResultOrder('ipv4first')
 
 const { Pool } = pg
 

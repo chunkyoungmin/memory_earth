@@ -30,7 +30,7 @@ export default function FavoritesPage() {
         {photos.map((photo) => (
           <div key={photo.id} className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
             <img
-              src={`/uploads/${photo.file_path.split('/').pop()}`}
+              src={photo.file_path}
               alt={photo.title || ''}
               className="w-full h-full object-cover"
             />

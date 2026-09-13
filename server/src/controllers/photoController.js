@@ -1,24 +1,37 @@
 import exifr from 'exifr'
 import { pool } from '../config/db.js'
+import { supabase } from '../config/supabaseClient.js'
 
-// 사진 업로드 처리: 파일 저장 -> EXIF 파싱(GPS, 촬영시간) -> DB insert
 export async function uploadPhoto(req, res) {
   try {
     if (!req.file) {
       return res.status(400).json({ error: '파일이 없습니다.' })
     }
 
-    const filePath = req.file.path
     const { tripId, title } = req.body
     const userId = req.user.id
 
-    // EXIF에서 GPS와 촬영시간 추출
+    const ext = req.file.originalname.split('.').pop()
+    const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}.${ext}`
+
+    const { error: uploadError } = await supabase.storage
+      .from('photos')
+      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype })
+
+    if (uploadError) {
+      console.error('Supabase Storage 업로드 실패:', uploadError)
+      return res.status(500).json({ error: '사진 저장 중 오류가 발생했습니다.' })
+    }
+
+    const { data: publicUrlData } = supabase.storage.from('photos').getPublicUrl(fileName)
+    const publicUrl = publicUrlData.publicUrl
+
     let gps = null
     let takenAt = null
     let gpsSource = 'none'
 
     try {
-      const exifData = await exifr.parse(filePath, { gps: true })
+      const exifData = await exifr.parse(req.file.buffer, { gps: true })
       if (exifData?.latitude && exifData?.longitude) {
         gps = { latitude: exifData.latitude, longitude: exifData.longitude }
         gpsSource = 'exif'
@@ -27,7 +40,6 @@ export async function uploadPhoto(req, res) {
         takenAt = exifData.DateTimeOriginal
       }
     } catch (exifErr) {
-      // EXIF가 없거나 손상된 경우 - GPS 없이 진행 (사용자가 수동 지정하도록 프론트에서 처리)
       console.warn('EXIF 파싱 실패:', exifErr.message)
     }
 
@@ -38,7 +50,7 @@ export async function uploadPhoto(req, res) {
       [
         userId,
         tripId || null,
-        filePath,
+        publicUrl,
         title || null,
         gps?.latitude || null,
         gps?.longitude || null,
@@ -49,7 +61,7 @@ export async function uploadPhoto(req, res) {
 
     res.status(201).json({
       photo: result.rows[0],
-      hasGps: gpsSource === 'exif', // false면 프론트에서 "지구본 클릭해서 위치 지정" 유도
+      hasGps: gpsSource === 'exif',
     })
   } catch (err) {
     console.error('사진 업로드 실패:', err)
@@ -57,7 +69,6 @@ export async function uploadPhoto(req, res) {
   }
 }
 
-// 위치 정보 없는 사진에 수동으로 GPS 지정 (사용자가 지구본 클릭했을 때)
 export async function setManualLocation(req, res) {
   try {
     const { id } = req.params
@@ -84,7 +95,6 @@ export async function setManualLocation(req, res) {
   }
 }
 
-// 전체 사진 목록 (지구본 핀 렌더링용)
 export async function listPhotos(req, res) {
   try {
     const result = await pool.query(

@@ -11,6 +11,8 @@ import {
 import Pin from './Pin'
 import TripPath from './TripPath'
 import CountryBorders from './CountryBorders'
+import AdminBorders from './AdminBorders'
+import RegionBorders from './RegionBorders'
 import { vector3ToLatLng, latLngToVector3 } from '../utils/geo'
 import { getSunDirection } from '../utils/sunPosition'
 
@@ -23,23 +25,57 @@ const TEXTURES = {
 
 function CameraRig({ focusLatLng, controlsRef }) {
   const { camera } = useThree()
-
   useFrame(() => {
     if (!focusLatLng) return
     const target = latLngToVector3(focusLatLng.lat, focusLatLng.lng, 2)
     const desiredCamPos = target.clone().normalize().multiplyScalar(4.2)
-
     camera.position.lerp(desiredCamPos, 0.035)
     if (controlsRef.current) {
       controlsRef.current.target.lerp(target, 0.035)
       controlsRef.current.update()
     }
   })
-
   return null
 }
 
-function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavorite, sunDirectionRef }) {
+function ZoomWatcher({ onAdminBordersChange, onRegionBordersChange, onMaxZoom, earthMaterialRef }) {
+  const { camera } = useThree()
+  const triggeredRef = useRef(false)
+
+  useFrame(() => {
+    const dist = camera.position.length()
+    const blend = 1 - THREE.MathUtils.smoothstep(dist, 2.6, 3.3)
+    if (earthMaterialRef.current) {
+      earthMaterialRef.current.uniforms.mapBlend.value = blend
+    }
+    onAdminBordersChange(dist < 3.5)
+    onRegionBordersChange(dist < 2.4)
+
+    // 최대로 확대하면 (2.15 이하) 딱 한 번만 평면 지도 전환 신호 보내기
+    if (dist < 2.15 && !triggeredRef.current) {
+      triggeredRef.current = true
+      const surfacePoint = camera.position.clone().normalize().multiplyScalar(2)
+      const { lat, lng } = vector3ToLatLng(surfacePoint)
+      onMaxZoom(lat, lng)
+    }
+    if (dist > 2.3) {
+      triggeredRef.current = false // 다시 축소하면 재트리거 가능하게 초기화
+    }
+  })
+  return null
+}
+
+function Earth({
+  photos,
+  placingMode,
+  onLocationPick,
+  tripPhotos,
+  onToggleFavorite,
+  sunDirectionRef,
+  showAdminBorders,
+  showRegionBorders,
+  earthMaterialRef,
+}) {
   const earthRef = useRef()
   const cloudsRef = useRef()
 
@@ -50,20 +86,21 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
     TEXTURES.clouds,
   ])
 
-  const earthMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        uniforms: {
-          dayTexture: { value: dayMap },
-          nightTexture: { value: nightMap },
-          specularTexture: { value: specularMap },
-          sunDirection: { value: sunDirectionRef.current },
-        },
-        vertexShader: earthVertexShader,
-        fragmentShader: earthFragmentShader,
-      }),
-    [dayMap, nightMap, specularMap, sunDirectionRef]
-  )
+  const earthMaterial = useMemo(() => {
+    const material = new THREE.ShaderMaterial({
+      uniforms: {
+        dayTexture: { value: dayMap },
+        nightTexture: { value: nightMap },
+        specularTexture: { value: specularMap },
+        sunDirection: { value: sunDirectionRef.current },
+        mapBlend: { value: 0 },
+      },
+      vertexShader: earthVertexShader,
+      fragmentShader: earthFragmentShader,
+    })
+    earthMaterialRef.current = material
+    return material
+  }, [dayMap, nightMap, specularMap, sunDirectionRef, earthMaterialRef])
 
   const atmosphereMaterial = useMemo(
     () =>
@@ -98,16 +135,12 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
       </mesh>
 
       <CountryBorders radius={2} />
+      {showAdminBorders && <AdminBorders radius={2} />}
+      <RegionBorders radius={2} active={showRegionBorders} />
 
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[2.02, 64, 64]} />
-        <meshStandardMaterial
-          map={cloudsMap}
-          alphaMap={cloudsMap}
-          transparent
-          opacity={0.4}
-          depthWrite={false}
-        />
+        <meshStandardMaterial map={cloudsMap} alphaMap={cloudsMap} transparent opacity={0.4} depthWrite={false} />
       </mesh>
 
       <mesh material={atmosphereMaterial} scale={1.08}>
@@ -123,16 +156,13 @@ function Earth({ photos, placingMode, onLocationPick, tripPhotos, onToggleFavori
   )
 }
 
-// 실제 시각에 맞춰 태양광 위치를 계속 갱신하는 조명
 function SunLight({ sunDirectionRef }) {
   const lightRef = useRef()
-
   useFrame(() => {
     if (lightRef.current) {
       lightRef.current.position.copy(sunDirectionRef.current).multiplyScalar(5)
     }
   })
-
   return <directionalLight ref={lightRef} intensity={2.2} color="#fff4e0" />
 }
 
@@ -143,11 +173,14 @@ export default function Globe({
   tripPhotos = null,
   focusLatLng = null,
   onToggleFavorite,
+  onMaxZoom,
 }) {
   const controlsRef = useRef()
   const sunDirectionRef = useRef(getSunDirection())
+  const earthMaterialRef = useRef(null)
+  const [showAdminBorders, setShowAdminBorders] = useState(false)
+  const [showRegionBorders, setShowRegionBorders] = useState(false)
 
-  // 1분마다 실제 태양 위치 갱신 (낮/밤 경계가 실시간으로 서서히 이동)
   useEffect(() => {
     const interval = setInterval(() => {
       sunDirectionRef.current.copy(getSunDirection())
@@ -171,8 +204,17 @@ export default function Globe({
         tripPhotos={tripPhotos}
         onToggleFavorite={onToggleFavorite}
         sunDirectionRef={sunDirectionRef}
+        showAdminBorders={showAdminBorders}
+        showRegionBorders={showRegionBorders}
+        earthMaterialRef={earthMaterialRef}
       />
 
+      <ZoomWatcher
+        onAdminBordersChange={setShowAdminBorders}
+        onRegionBordersChange={setShowRegionBorders}
+        onMaxZoom={onMaxZoom}
+        earthMaterialRef={earthMaterialRef}
+      />
       <CameraRig focusLatLng={focusLatLng} controlsRef={controlsRef} />
 
       <OrbitControls
@@ -180,7 +222,7 @@ export default function Globe({
         enabled={!focusLatLng}
         enablePan={false}
         enableZoom
-        minDistance={2.6}
+        minDistance={2.1}
         maxDistance={12}
         rotateSpeed={0.5}
         zoomSpeed={0.6}

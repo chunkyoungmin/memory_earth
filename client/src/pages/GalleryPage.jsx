@@ -71,7 +71,7 @@ export default function GalleryPage() {
                        hover:border-white/30 transition-colors"
           >
             <img
-              src={`/uploads/${photo.file_path.split('/').pop()}`}
+              src={photo.file_path}
               alt={photo.title || ''}
               className="w-full h-full object-cover"
             />
@@ -88,7 +88,7 @@ export default function GalleryPage() {
         >
           <div className="max-w-3xl w-full">
             <img
-              src={`/uploads/${selected.file_path.split('/').pop()}`}
+              src={selected.file_path}
               alt={selected.title || ''}
               className="w-full max-h-[75vh] object-contain rounded-xl"
             />

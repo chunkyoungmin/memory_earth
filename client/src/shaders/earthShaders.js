@@ -19,6 +19,7 @@ export const earthFragmentShader = /* glsl */ `
   uniform sampler2D nightTexture;
   uniform sampler2D specularTexture;
   uniform vec3 sunDirection;
+  uniform float mapBlend;
 
   varying vec2 vUv;
   varying vec3 vNormal;
@@ -29,16 +30,18 @@ export const earthFragmentShader = /* glsl */ `
     vec3 nightColor = texture2D(nightTexture, vUv).rgb;
     float specularMask = texture2D(specularTexture, vUv).r;
 
-    // 태양 방향과 표면 노멀의 내적 -> 낮/밤 경계
     float sunDot = dot(normalize(vNormal), normalize(sunDirection));
     float dayMix = smoothstep(-0.15, 0.15, sunDot);
 
-    // 밤에는 도시 불빛, 낮에는 실사 텍스처
     vec3 color = mix(nightColor * vec3(1.1, 0.9, 0.6), dayColor, dayMix);
 
-    // 바다 부분 하이라이트 (specular mask 활용)
     float highlight = pow(max(sunDot, 0.0), 8.0) * specularMask * 0.3;
     color += vec3(highlight);
+
+    vec3 flatLand = vec3(0.55, 0.62, 0.45);
+    vec3 flatOcean = vec3(0.16, 0.32, 0.48);
+    vec3 flatColor = mix(flatLand, flatOcean, specularMask);
+    color = mix(color, flatColor, mapBlend);
 
     gl_FragColor = vec4(color, 1.0);
   }

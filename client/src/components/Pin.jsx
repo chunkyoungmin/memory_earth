@@ -55,7 +55,7 @@ export default function Pin({ photo, radius = 2, onToggleFavorite }) {
           >
             <div className="relative">
               <img
-                src={`/uploads/${photo.file_path.split('/').pop()}`}
+                src={photo.file_path}
                 alt={photo.title || '사진'}
                 className="w-full h-28 object-cover"
               />

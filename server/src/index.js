@@ -5,7 +5,6 @@ import photoRoutes from './routes/photoRoutes.js'
 import tripRoutes from './routes/tripRoutes.js'
 import adminRoutes from './routes/adminRoutes.js'
 import authRoutes from './routes/authRoutes.js'
-import { UPLOAD_DIR } from './config/paths.js'
 
 dotenv.config()
 
@@ -15,7 +14,6 @@ const PORT = process.env.PORT || 4000
 app.use(cors({ origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173' }))
 app.use(express.json())
 
-app.use('/uploads', express.static(UPLOAD_DIR))
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'earth-memory-server' })

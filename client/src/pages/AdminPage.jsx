@@ -52,7 +52,7 @@ export default function AdminPage() {
             className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10"
           >
             <img
-              src={`/uploads/${photo.file_path.split('/').pop()}`}
+              src={photo.file_path}
               alt=""
               className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
             />

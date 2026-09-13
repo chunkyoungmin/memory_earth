@@ -1,6 +1,3 @@
-import { pool } from '../config/db.js'
-import fs from 'fs'
-
 export async function getStats(req, res) {
   try {
     const [users, trips, photos, noGps] = await Promise.all([
@@ -46,11 +43,10 @@ export async function deletePhoto(req, res) {
       return res.status(404).json({ error: '사진을 찾을 수 없습니다.' })
     }
 
-    // 실제 파일도 같이 삭제
-    const filePath = result.rows[0].file_path
-    fs.unlink(filePath, (err) => {
-      if (err) console.warn('파일 삭제 실패(무시 가능):', err.message)
-    })
+    const fileUrl = result.rows[0].file_path
+    const fileName = fileUrl.split('/').pop()
+    const { error } = await supabase.storage.from('photos').remove([fileName])
+    if (error) console.warn('스토리지 파일 삭제 실패(무시 가능):', error.message)
 
     res.json({ success: true })
   } catch (err) {

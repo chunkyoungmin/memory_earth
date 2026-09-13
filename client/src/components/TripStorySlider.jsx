@@ -7,7 +7,7 @@ export default function TripStorySlider({ photos, index, onChange }) {
       {photo && (
         <div className="flex items-center gap-3 bg-black/50 backdrop-blur-md px-4 py-2 rounded-2xl">
           <img
-            src={`/uploads/${photo.file_path.split('/').pop()}`}
+            src={photo.file_path}
             alt=""
             className="w-10 h-10 rounded-lg object-cover"
           />

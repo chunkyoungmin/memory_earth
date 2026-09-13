@@ -1,0 +1,65 @@
+c9e08c2b-473b-4dcc-8f33-ff820e795231
+
+passoword: chunkm0818$
+
+관리자 해시
+$2b$12$wIGcEKDlVsSqc90ZAd02meHUzV35tlMlEpZnANvBhFQDsRsY8oBHa
+
+$2b$12$BGrWaPhZWPC5o/XVF5w/P.dJU4MAiPlcnvSB0Y5jdwSpUfGHk/WXG
+rhksflwk
+
+
+
+postgres / chunkm0818$ → DB 서버 자체를 관리하는 최고 권한 계정 (psql로 -U postgres 붙여서 쓸 때)
+earth_memory_app / local1234 → 서버 코드(.env)가 DB에 연결할 때 쓰는 계정 (사람이 로그인하는 게 아니라, 프로그램이 자동으로 씀)
+admin@earthmemory.local / chunkm0818$ → 실제로 브라우저에서 로그인 화면에 입력하는 계정
+
+$2b$12$Er8C27xa9OW9AJN3QmYdquIBg/6IYpKSyX9/AgTuyRBWwOuhFtQb6
+
+$2b$12$qPDtqunKOrsQE1svav7TwuMrsgh.IuTjsKEqxlsIZi3qZz93cCDXu
+
+지구본 사진 홈피
+https://www.solarsystemscope.com/textures/
+
+서버 연결 전 실시간 홈페이지 실행
+cd C:\Users\chunk\Desktop\Earth-Memory\server
+npm run dev
+
+cd C:\Users\chunk\Desktop\Earth-Memory\client
+npm run dev
+
+git 올리기
+cd C:\Users\chunk\Desktop\Earth-Memory
+git add .
+git commit -m "수정 내용 설명"
+git push
+
+
+Download the React DevTools for a better development experience: https://reactjs.org/link/react-devtools
+react-router-dom.js?v=c8474734:4427 ⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+warnOnce @ react-router-dom.js?v=c8474734:4427
+react-router-dom.js?v=c8474734:4427 ⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+warnOnce @ react-router-dom.js?v=c8474734:4427
+2App.jsx:192 Uncaught ReferenceError: mapViewLocation is not defined
+    at App (App.jsx:192:10)
+    at renderWithHooks (chunk-YCOEJRGR.js?v=6dd3ff25:11548:26)
+    at updateFunctionComponent (chunk-YCOEJRGR.js?v=6dd3ff25:14582:28)
+    at beginWork (chunk-YCOEJRGR.js?v=6dd3ff25:15924:22)
+    at HTMLUnknownElement.callCallback2 (chunk-YCOEJRGR.js?v=6dd3ff25:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-YCOEJRGR.js?v=6dd3ff25:3699:24)
+    at invokeGuardedCallback (chunk-YCOEJRGR.js?v=6dd3ff25:3733:39)
+    at beginWork$1 (chunk-YCOEJRGR.js?v=6dd3ff25:19765:15)
+    at performUnitOfWork (chunk-YCOEJRGR.js?v=6dd3ff25:19198:20)
+    at workLoopSync (chunk-YCOEJRGR.js?v=6dd3ff25:19137:13)
+chunk-PJXIKWRK.js?v=6dd3ff25:17705 The above error occurred in the <App> component:
+
+    at App (http://localhost:5173/src/App.jsx:183:43)
+    at AuthProvider (http://localhost:5173/src/context/AuthContext.jsx:21:32)
+    at Router (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=c8474734:4535:15)
+    at BrowserRouter (http://localhost:5173/node_modules/.vite/deps/react-router-dom.js?v=c8474734:5273:5)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+console.error @ chunk-PJXIKWRK.js?v=6dd3ff25:17705
+chunk-YCOEJRGR.js?v=6dd3ff25:19413 Uncaught ReferenceError: mapViewLocation is not defined
+    at App (App.jsx:192:10)
