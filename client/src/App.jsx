@@ -15,7 +15,6 @@ import ProfilePage from './pages/ProfilePage'
 import { useAuth } from './context/AuthContext'
 import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
-import MapView from './components/MapView'
 
 const REPLAY_STEP_MS = 3000
 
@@ -26,7 +25,6 @@ function Home({ activeTripId }) {
   const [storyIndex, setStoryIndex] = useState(0)
   const [replaying, setReplaying] = useState(false)
   const [replayIndex, setReplayIndex] = useState(0)
-  const [mapViewLocation, setMapViewLocation] = useState(null)
 
   useEffect(() => {
     if (!activeTripId) {
@@ -95,7 +93,6 @@ function Home({ activeTripId }) {
         tripPhotos={tripPhotos}
         focusLatLng={focusLatLng}
         onToggleFavorite={toggleFavorite}
-        onMaxZoom={(lat, lng) => setMapViewLocation({ lat, lng })}
       />
 
       {!replaying && !tripPhotos && (
@@ -134,13 +131,7 @@ function Home({ activeTripId }) {
         <TripStorySlider photos={tripPhotosWithGps} index={storyIndex} onChange={setStoryIndex} />
       )}
 
-      {mapViewLocation && (
-          <MapView
-            lat={mapViewLocation.lat}
-            lng={mapViewLocation.lng}
-            onClose={() => setMapViewLocation(null)}
-          />
-        )}
+      <PhotoUploader onUploaded={handleUploaded} />
     </div>
   )
 }
@@ -197,7 +188,6 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/settings" element={<AdminPage />} />
         </Routes>
-        
       </div>
     </>
   )

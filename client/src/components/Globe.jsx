@@ -1,169 +1,38 @@
-import { useRef, useMemo, useCallback, useEffect, useState } from 'react'
-import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
-import * as THREE from 'three'
-import {
-  earthVertexShader,
-  earthFragmentShader,
-  atmosphereVertexShader,
-  atmosphereFragmentShader,
-} from '../shaders/earthShaders'
-import Pin from './Pin'
-import TripPath from './TripPath'
-import CountryBorders from './CountryBorders'
-import AdminBorders from './AdminBorders'
-import RegionBorders from './RegionBorders'
-import { vector3ToLatLng, latLngToVector3 } from '../utils/geo'
-import { getSunDirection } from '../utils/sunPosition'
+import { useRef, useEffect } from 'react'
+import * as Cesium from 'cesium'
+import 'cesium/Build/Cesium/Widgets/widgets.css'
+import { createRoot } from 'react-dom/client'
 
-const TEXTURES = {
-  day: '/textures/2k_earth_daymap.jpg',
-  night: '/textures/2k_earth_nightmap.jpg',
-  specular: '/textures/2k_earth_specular_map.jpg',
-  clouds: '/textures/2k_earth_clouds.jpg',
-}
+Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
 
-function CameraRig({ focusLatLng, controlsRef }) {
-  const { camera } = useThree()
-  useFrame(() => {
-    if (!focusLatLng) return
-    const target = latLngToVector3(focusLatLng.lat, focusLatLng.lng, 2)
-    const desiredCamPos = target.clone().normalize().multiplyScalar(4.2)
-    camera.position.lerp(desiredCamPos, 0.035)
-    if (controlsRef.current) {
-      controlsRef.current.target.lerp(target, 0.035)
-      controlsRef.current.update()
-    }
-  })
-  return null
-}
+function createPinPopupContent(photo, onToggleFavorite) {
+  const container = document.createElement('div')
+  container.className = 'w-48 bg-[#161618] rounded-xl overflow-hidden border border-white/10 shadow-2xl'
 
-function ZoomWatcher({ onAdminBordersChange, onRegionBordersChange, onMaxZoom, earthMaterialRef }) {
-  const { camera } = useThree()
-  const triggeredRef = useRef(false)
-
-  useFrame(() => {
-    const dist = camera.position.length()
-    const blend = 1 - THREE.MathUtils.smoothstep(dist, 2.6, 3.3)
-    if (earthMaterialRef.current) {
-      earthMaterialRef.current.uniforms.mapBlend.value = blend
-    }
-    onAdminBordersChange(dist < 3.5)
-    onRegionBordersChange(dist < 2.4)
-
-    // 최대로 확대하면 (2.15 이하) 딱 한 번만 평면 지도 전환 신호 보내기
-    if (dist < 2.15 && !triggeredRef.current) {
-      triggeredRef.current = true
-      const surfacePoint = camera.position.clone().normalize().multiplyScalar(2)
-      const { lat, lng } = vector3ToLatLng(surfacePoint)
-      onMaxZoom(lat, lng)
-    }
-    if (dist > 2.3) {
-      triggeredRef.current = false // 다시 축소하면 재트리거 가능하게 초기화
-    }
-  })
-  return null
-}
-
-function Earth({
-  photos,
-  placingMode,
-  onLocationPick,
-  tripPhotos,
-  onToggleFavorite,
-  sunDirectionRef,
-  showAdminBorders,
-  showRegionBorders,
-  earthMaterialRef,
-}) {
-  const earthRef = useRef()
-  const cloudsRef = useRef()
-
-  const [dayMap, nightMap, specularMap, cloudsMap] = useLoader(THREE.TextureLoader, [
-    TEXTURES.day,
-    TEXTURES.night,
-    TEXTURES.specular,
-    TEXTURES.clouds,
-  ])
-
-  const earthMaterial = useMemo(() => {
-    const material = new THREE.ShaderMaterial({
-      uniforms: {
-        dayTexture: { value: dayMap },
-        nightTexture: { value: nightMap },
-        specularTexture: { value: specularMap },
-        sunDirection: { value: sunDirectionRef.current },
-        mapBlend: { value: 0 },
-      },
-      vertexShader: earthVertexShader,
-      fragmentShader: earthFragmentShader,
-    })
-    earthMaterialRef.current = material
-    return material
-  }, [dayMap, nightMap, specularMap, sunDirectionRef, earthMaterialRef])
-
-  const atmosphereMaterial = useMemo(
-    () =>
-      new THREE.ShaderMaterial({
-        vertexShader: atmosphereVertexShader,
-        fragmentShader: atmosphereFragmentShader,
-        blending: THREE.AdditiveBlending,
-        side: THREE.BackSide,
-        transparent: true,
-      }),
-    []
+  const root = createRoot(container)
+  root.render(
+    <div>
+      <div className="relative">
+        <img src={photo.file_path} alt={photo.title || ''} className="w-full h-28 object-cover" />
+        <button
+          onClick={() => onToggleFavorite?.(photo.id)}
+          className={`absolute top-2 right-2 w-7 h-7 rounded-full text-sm ${
+            photo.is_favorite ? 'bg-yellow-400 text-black' : 'bg-black/60 text-white/70'
+          }`}
+        >
+          ★
+        </button>
+      </div>
+      <div className="p-3">
+        <p className="text-white text-sm font-medium truncate">{photo.title || '제목 없음'}</p>
+        <p className="text-white/50 text-xs mt-1">{photo.city || photo.country || '위치 정보 없음'}</p>
+        {photo.taken_at && (
+          <p className="text-white/40 text-xs">{new Date(photo.taken_at).toLocaleDateString('ko-KR')}</p>
+        )}
+      </div>
+    </div>
   )
-
-  useFrame((_, delta) => {
-    if (cloudsRef.current) cloudsRef.current.rotation.y += delta * 0.015
-  })
-
-  const handleEarthClick = useCallback(
-    (e) => {
-      if (!placingMode) return
-      e.stopPropagation()
-      const { lat, lng } = vector3ToLatLng(e.point)
-      onLocationPick?.(lat, lng)
-    },
-    [placingMode, onLocationPick]
-  )
-
-  return (
-    <group>
-      <mesh ref={earthRef} material={earthMaterial} onClick={handleEarthClick}>
-        <sphereGeometry args={[2, 128, 128]} />
-      </mesh>
-
-      <CountryBorders radius={2} />
-      {showAdminBorders && <AdminBorders radius={2} />}
-      <RegionBorders radius={2} active={showRegionBorders} />
-
-      <mesh ref={cloudsRef}>
-        <sphereGeometry args={[2.02, 64, 64]} />
-        <meshStandardMaterial map={cloudsMap} alphaMap={cloudsMap} transparent opacity={0.4} depthWrite={false} />
-      </mesh>
-
-      <mesh material={atmosphereMaterial} scale={1.08}>
-        <sphereGeometry args={[2, 64, 64]} />
-      </mesh>
-
-      {photos.map((photo) => (
-        <Pin key={photo.id} photo={photo} radius={2} onToggleFavorite={onToggleFavorite} />
-      ))}
-
-      {tripPhotos && <TripPath photos={tripPhotos} radius={2} />}
-    </group>
-  )
-}
-
-function SunLight({ sunDirectionRef }) {
-  const lightRef = useRef()
-  useFrame(() => {
-    if (lightRef.current) {
-      lightRef.current.position.copy(sunDirectionRef.current).multiplyScalar(5)
-    }
-  })
-  return <directionalLight ref={lightRef} intensity={2.2} color="#fff4e0" />
+  return container
 }
 
 export default function Globe({
@@ -173,60 +42,172 @@ export default function Globe({
   tripPhotos = null,
   focusLatLng = null,
   onToggleFavorite,
-  onMaxZoom,
 }) {
-  const controlsRef = useRef()
-  const sunDirectionRef = useRef(getSunDirection())
-  const earthMaterialRef = useRef(null)
-  const [showAdminBorders, setShowAdminBorders] = useState(false)
-  const [showRegionBorders, setShowRegionBorders] = useState(false)
+  const containerRef = useRef(null)
+  const viewerRef = useRef(null)
+  const entitiesRef = useRef([])
+  const popupElRef = useRef(null)
 
+  // 최초 생성
   useEffect(() => {
-    const interval = setInterval(() => {
-      sunDirectionRef.current.copy(getSunDirection())
-    }, 60000)
-    return () => clearInterval(interval)
+    if (viewerRef.current) return
+
+    const viewer = new Cesium.Viewer(containerRef.current, {
+      timeline: false,
+      animation: false,
+      baseLayerPicker: false,
+      geocoder: false,
+      homeButton: false,
+      sceneModePicker: false,
+      navigationHelpButton: false,
+      fullscreenButton: false,
+      infoBox: false,
+      selectionIndicator: false,
+      terrain: Cesium.Terrain.fromWorldTerrain(), // 실제 지형 고도 데이터
+    })
+
+    // 미니멀한 배경 - 우주/별 배경 제거하고 심플한 단색
+    viewer.scene.skyBox.show = false
+    viewer.scene.skyAtmosphere.show = true
+    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0a0c')
+    viewer.scene.globe.enableLighting = true // 낮/밤 실시간 태양광 반영 (Cesium 기본 제공)
+    viewer.scene.moon.show = false
+    viewer.scene.sun.show = true
+
+    viewer.creditContainer.style.display = 'none' // 하단 크레딧 로고 숨김(선택)
+
+    // 시작 위치: 지구 전체가 보이도록
+    viewer.camera.flyHome(0)
+
+    viewerRef.current = viewer
+
+    return () => {
+      viewer.destroy()
+      viewerRef.current = null
+    }
   }, [])
 
-  return (
-    <Canvas
-      camera={{ position: [0, 0, 6], fov: 45 }}
-      gl={{ antialias: true }}
-      style={{ background: 'transparent', cursor: placingMode ? 'crosshair' : 'default' }}
-    >
-      <SunLight sunDirectionRef={sunDirectionRef} />
-      <ambientLight intensity={0.15} />
+  // 지구본 클릭 -> 위치 수동 지정
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
 
-      <Earth
-        photos={photos}
-        placingMode={placingMode}
-        onLocationPick={onLocationPick}
-        tripPhotos={tripPhotos}
-        onToggleFavorite={onToggleFavorite}
-        sunDirectionRef={sunDirectionRef}
-        showAdminBorders={showAdminBorders}
-        showRegionBorders={showRegionBorders}
-        earthMaterialRef={earthMaterialRef}
-      />
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
 
-      <ZoomWatcher
-        onAdminBordersChange={setShowAdminBorders}
-        onRegionBordersChange={setShowRegionBorders}
-        onMaxZoom={onMaxZoom}
-        earthMaterialRef={earthMaterialRef}
-      />
-      <CameraRig focusLatLng={focusLatLng} controlsRef={controlsRef} />
+    handler.setInputAction((movement) => {
+      if (!placingMode) return
+      const cartesian = viewer.camera.pickEllipsoid(movement.position, viewer.scene.globe.ellipsoid)
+      if (!cartesian) return
+      const cartographic = Cesium.Cartographic.fromCartesian(cartesian)
+      const lat = Cesium.Math.toDegrees(cartographic.latitude)
+      const lng = Cesium.Math.toDegrees(cartographic.longitude)
+      onLocationPick?.(lat, lng)
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
 
-      <OrbitControls
-        ref={controlsRef}
-        enabled={!focusLatLng}
-        enablePan={false}
-        enableZoom
-        minDistance={2.1}
-        maxDistance={12}
-        rotateSpeed={0.5}
-        zoomSpeed={0.6}
-      />
-    </Canvas>
-  )
+    return () => handler.destroy()
+  }, [placingMode, onLocationPick])
+
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+    viewer.scene.canvas.style.cursor = placingMode ? 'crosshair' : ''
+  }, [placingMode])
+
+  // 사진 핀 렌더링
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+
+    entitiesRef.current.forEach((e) => viewer.entities.remove(e))
+    entitiesRef.current = []
+
+    photos.forEach((photo) => {
+      if (photo.latitude == null || photo.longitude == null) return
+
+      const entity = viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(photo.longitude, photo.latitude),
+        point: {
+          pixelSize: 10,
+          color: photo.is_favorite
+            ? Cesium.Color.fromCssColorString('#ffd166')
+            : Cesium.Color.fromCssColorString('#ff5a5f'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        },
+      })
+      entity._photo = photo
+      entitiesRef.current.push(entity)
+    })
+  }, [photos])
+
+  // 핀 클릭 -> 팝업 카드 표시 (직접 화면 좌표 계산해서 HTML 오버레이)
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+
+    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas)
+
+    handler.setInputAction((click) => {
+      // 기존 팝업 제거
+      if (popupElRef.current) {
+        popupElRef.current.remove()
+        popupElRef.current = null
+      }
+
+      const picked = viewer.scene.pick(click.position)
+      if (!Cesium.defined(picked) || !picked.id?._photo) return
+
+      const photo = picked.id._photo
+      const popupContent = createPinPopupContent(photo, onToggleFavorite)
+      popupContent.style.position = 'absolute'
+      popupContent.style.left = `${click.position.x + 10}px`
+      popupContent.style.top = `${click.position.y - 10}px`
+      popupContent.style.zIndex = 50
+      containerRef.current.appendChild(popupContent)
+      popupElRef.current = popupContent
+    }, Cesium.ScreenSpaceEventType.LEFT_CLICK)
+
+    return () => handler.destroy()
+  }, [onToggleFavorite])
+
+  // 여행 경로 선 그리기
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer) return
+
+    const pathId = 'trip-path-entity'
+    const existing = viewer.entities.getById(pathId)
+    if (existing) viewer.entities.remove(existing)
+
+    const withGps = (tripPhotos || []).filter((p) => p.latitude != null && p.longitude != null)
+    if (withGps.length < 2) return
+
+    const positions = withGps.flatMap((p) => [p.longitude, p.latitude])
+
+    viewer.entities.add({
+      id: pathId,
+      polyline: {
+        positions: Cesium.Cartesian3.fromDegreesArray(positions),
+        width: 2,
+        material: new Cesium.PolylineDashMaterialProperty({
+          color: Cesium.Color.fromCssColorString('#ffd166'),
+        }),
+        clampToGround: true,
+      },
+    })
+  }, [tripPhotos])
+
+  // 특정 위치로 카메라 이동 (Memory Replay, 여행 스토리 슬라이더)
+  useEffect(() => {
+    const viewer = viewerRef.current
+    if (!viewer || !focusLatLng) return
+
+    viewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(focusLatLng.lng, focusLatLng.lat, 15000),
+      duration: 2.5,
+    })
+  }, [focusLatLng])
+
+  return <div ref={containerRef} className="w-full h-full relative" />
 }
