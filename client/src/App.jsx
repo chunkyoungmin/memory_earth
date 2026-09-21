@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Routes, Route, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Globe from './components/Globe'
 import Sidebar from './components/Sidebar'
@@ -17,6 +17,31 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 
 const REPLAY_STEP_MS = 3000
+
+function PublicHome() {
+  return (
+    <div className="w-full h-screen relative overflow-hidden bg-earth-bg">
+      <Globe />
+
+      <header className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-6 py-5">
+        <span className="text-white text-lg font-semibold tracking-tight">🌍 Earth Memory</span>
+        <div className="flex items-center gap-3 text-sm">
+          <Link to="/login" className="rounded-lg px-3 py-2 text-white/80 hover:text-white">
+            로그인
+          </Link>
+          <Link to="/signup" className="rounded-lg bg-white px-4 py-2 font-medium text-black hover:bg-white/90">
+            시작하기
+          </Link>
+        </div>
+      </header>
+
+      <main className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
+        <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-6xl">Earth Memory</h1>
+        <p className="mt-3 text-sm text-white/60 sm:text-base">Every Photo Has A Place.</p>
+      </main>
+    </div>
+  )
+}
 
 function Home({ activeTripId }) {
   const { photos, addOrUpdatePhoto, setPhotoLocation, toggleFavorite } = usePhotos()
@@ -152,9 +177,10 @@ export default function App() {
   if (!user) {
     return (
       <Routes>
+        <Route path="/" element={<PublicHome />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
-        <Route path="*" element={<LoginPage />} />
+        <Route path="*" element={<PublicHome />} />
       </Routes>
     )
   }

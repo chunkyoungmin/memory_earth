@@ -9,13 +9,23 @@ dns.setDefaultResultOrder('ipv4first')
 
 const { Pool } = pg
 
-export const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'earth_memory',
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-})
+const connectionString = process.env.DATABASE_URL
+
+export const pool = new Pool(
+  connectionString
+    ? {
+        connectionString,
+        // Render에서 Supabase PostgreSQL에 연결할 때 TLS가 필요하다.
+        ssl: { rejectUnauthorized: false },
+      }
+    : {
+        host: process.env.DB_HOST || 'localhost',
+        port: process.env.DB_PORT || 5432,
+        database: process.env.DB_NAME || 'earth_memory',
+        user: process.env.DB_USER,
+        password: process.env.DB_PASSWORD,
+      }
+)
 
 pool.on('error', (err) => {
   console.error('Unexpected PostgreSQL error', err)
