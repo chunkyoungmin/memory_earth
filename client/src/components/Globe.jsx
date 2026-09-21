@@ -3,9 +3,7 @@ import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { createRoot } from 'react-dom/client'
 
-if (import.meta.env.VITE_CESIUM_TOKEN) {
-  Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
-}
+Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
 
 function createPinPopupContent(photo, onToggleFavorite) {
   const container = document.createElement('div')
@@ -65,11 +63,11 @@ export default function Globe({
       fullscreenButton: false,
       infoBox: false,
       selectionIndicator: false,
-      // Ion의 기본 지도/지형은 유효한 토큰이 없으면 401을 반환한다.
-      // 공개 OSM 타일과 기본 타원체 지형을 사용해 항상 지구본을 표시한다.
+      // 프로젝트에 포함된 equirectangular 지구 텍스처를 전체 지구 레이어로 사용한다.
+      // 외부 Ion 지도 타일 없이도 처음 진입한 지구본이 항상 표시된다.
       baseLayer: new Cesium.ImageryLayer(
-        new Cesium.OpenStreetMapImageryProvider({
-          url: 'https://tile.openstreetmap.org/',
+        new Cesium.SingleTileImageryProvider({
+          url: '/textures/8k_earth_daymap.jpg',
         })
       ),
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
@@ -82,6 +80,9 @@ export default function Globe({
     viewer.scene.globe.enableLighting = true // 낮/밤 실시간 태양광 반영 (Cesium 기본 제공)
     viewer.scene.moon.show = false
     viewer.scene.sun.show = true
+
+    // Cesium 1.145의 Viewer에는 creditContainer 속성이 없다.
+    // 크레딧은 Cesium의 사용 조건에 따라 기본 표시한다.
 
     // 시작 위치: 지구 전체가 보이도록
     viewer.camera.flyHome(0)
