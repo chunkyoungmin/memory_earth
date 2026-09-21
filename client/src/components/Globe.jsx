@@ -3,7 +3,9 @@ import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { createRoot } from 'react-dom/client'
 
-Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
+if (import.meta.env.VITE_CESIUM_TOKEN) {
+  Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
+}
 
 function createPinPopupContent(photo, onToggleFavorite) {
   const container = document.createElement('div')
@@ -63,7 +65,14 @@ export default function Globe({
       fullscreenButton: false,
       infoBox: false,
       selectionIndicator: false,
-      terrain: Cesium.Terrain.fromWorldTerrain(), // 실제 지형 고도 데이터
+      // Ion의 기본 지도/지형은 유효한 토큰이 없으면 401을 반환한다.
+      // 공개 OSM 타일과 기본 타원체 지형을 사용해 항상 지구본을 표시한다.
+      baseLayer: new Cesium.ImageryLayer(
+        new Cesium.OpenStreetMapImageryProvider({
+          url: 'https://tile.openstreetmap.org/',
+        })
+      ),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     })
 
     // 미니멀한 배경 - 우주/별 배경 제거하고 심플한 단색
@@ -73,8 +82,6 @@ export default function Globe({
     viewer.scene.globe.enableLighting = true // 낮/밤 실시간 태양광 반영 (Cesium 기본 제공)
     viewer.scene.moon.show = false
     viewer.scene.sun.show = true
-
-    viewer.creditContainer.style.display = 'none' // 하단 크레딧 로고 숨김(선택)
 
     // 시작 위치: 지구 전체가 보이도록
     viewer.camera.flyHome(0)
