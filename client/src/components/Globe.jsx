@@ -63,29 +63,40 @@ export default function Globe({
       fullscreenButton: false,
       infoBox: false,
       selectionIndicator: false,
-      // 프로젝트에 포함된 equirectangular 지구 텍스처를 전체 지구 레이어로 사용한다.
-      // 외부 Ion 지도 타일 없이도 처음 진입한 지구본이 항상 표시된다.
-      baseLayer: new Cesium.ImageryLayer(
-        new Cesium.SingleTileImageryProvider({
-          url: '/textures/8k_earth_daymap.jpg',
-        })
+      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
+        Cesium.SingleTileImageryProvider.fromUrl('/textures/earth-dusk.jpg')
       ),
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     })
 
-    // 미니멀한 배경 - 우주/별 배경 제거하고 심플한 단색
-    viewer.scene.skyBox.show = false
-    viewer.scene.skyAtmosphere.show = true
-    viewer.scene.backgroundColor = Cesium.Color.fromCssColorString('#0a0a0c')
-    viewer.scene.globe.enableLighting = true // 낮/밤 실시간 태양광 반영 (Cesium 기본 제공)
-    viewer.scene.moon.show = false
-    viewer.scene.sun.show = true
+    const { scene, camera } = viewer
+    scene.skyBox.show = false
+    scene.moon.show = false
+    scene.sun.show = false
+    scene.backgroundColor = Cesium.Color.fromCssColorString('#101c26')
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#234657')
+    scene.skyAtmosphere.saturationShift = -0.65
+    scene.skyAtmosphere.brightnessShift = -0.45
+    scene.globe.showGroundAtmosphere = false
+    scene.globe.enableLighting = true
+    // 고정된 오후의 빛과 완만한 음영으로 반대편의 사진도 읽을 수 있게 한다.
+    const lightOrigin = Cesium.Cartesian3.fromDegrees(77, 42)
+    const direction = Cesium.Cartesian3.normalize(lightOrigin, new Cesium.Cartesian3())
+    scene.light = new Cesium.DirectionalLight({
+      direction: Cesium.Cartesian3.negate(direction, direction),
+      color: Cesium.Color.fromCssColorString('#fff0df'),
+    })
+    scene.globe.lightingFadeOutDistance = 7_000_000
+    scene.globe.lightingFadeInDistance = 65_000_000
 
-    // Cesium 1.145의 Viewer에는 creditContainer 속성이 없다.
-    // 크레딧은 Cesium의 사용 조건에 따라 기본 표시한다.
-
-    // 시작 위치: 지구 전체가 보이도록
-    viewer.camera.flyHome(0)
+    // 짧은 화면 변을 기준으로 지구의 전체 윤곽을 담는다.
+    const frustum = camera.frustum
+    const halfAngle = Math.atan(0.80 * Math.tan(frustum.fovy / 2) * Math.min(1, frustum.aspectRatio))
+    const altitude = scene.globe.ellipsoid.maximumRadius * (1 / Math.sin(halfAngle) - 1)
+    camera.setView({
+      destination: Cesium.Cartesian3.fromDegrees(124, 13, altitude),
+      orientation: { heading: 0, pitch: -Cesium.Math.PI_OVER_TWO, roll: 0 },
+    })
 
     viewerRef.current = viewer
 
@@ -135,11 +146,11 @@ export default function Globe({
       const entity = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(photo.longitude, photo.latitude),
         point: {
-          pixelSize: 10,
+          pixelSize: photo.is_favorite ? 11 : 9,
           color: photo.is_favorite
-            ? Cesium.Color.fromCssColorString('#ffd166')
-            : Cesium.Color.fromCssColorString('#ff5a5f'),
-          outlineColor: Cesium.Color.WHITE,
+            ? Cesium.Color.fromCssColorString('#ffe2a1')
+            : Cesium.Color.fromCssColorString('#ffbc86'),
+          outlineColor: Cesium.Color.fromCssColorString('#382e29'),
           outlineWidth: 2,
           heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
         },
@@ -197,10 +208,8 @@ export default function Globe({
       id: pathId,
       polyline: {
         positions: Cesium.Cartesian3.fromDegreesArray(positions),
-        width: 2,
-        material: new Cesium.PolylineDashMaterialProperty({
-          color: Cesium.Color.fromCssColorString('#ffd166'),
-        }),
+        width: 1.8,
+        material: Cesium.Color.fromCssColorString('#ffc695').withAlpha(0.85),
         clampToGround: true,
       },
     })
