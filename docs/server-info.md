@@ -1,27 +1,19 @@
 # 서버 인프라 정보
 
-## 개발/운영 서버
+## 운영 주소
 
-| 항목 | 값 |
+| 용도 | 주소 |
 |---|---|
-| 클라우드 | OCI (Oracle Cloud Infrastructure) |
-| OS | Ubuntu 24.04 LTS |
-| 웹 서버 | Nginx |
-| 메일 서버 | Stalwart Mail Server |
-| 웹메일 | SOGo (설정 중) |
-| DB | PostgreSQL |
+| 홈페이지 | [Earth Memory](https://earth-memory-client.onrender.com/) |
+| API 상태 확인 | [Express 상태 확인](https://earth-memory-server.onrender.com/api/health) |
 
-## 도메인
+## Render 설정
 
-| 도메인 | 용도 |
-|---|---|
-| `23.ecs.li` | 홈페이지 (Earth Memory 클라이언트/API) |
-| `mail.23.ecs.li` | 메일 서버 |
-| `webmail.23.ecs.li` | 웹메일 (SOGo) |
+- 정적 사이트를 빌드할 때 `VITE_API_URL=https://earth-memory-server.onrender.com`을 사용한다. 이 값을 바꾸면 클라이언트를 다시 빌드한다.
+- Express 서비스의 `CLIENT_ORIGIN`은 `https://earth-memory-client.onrender.com`으로 설정한다.
+- 정적 사이트에서 `/signup`과 `/login`을 직접 열거나 새로고침해도 React 앱이 로드되도록 `/*`에서 `/index.html`로 rewrite를 설정한다.
+- API 호스트의 `/api/health`에서 JSON 응답을 확인한다.
 
-## 참고 사항
+## 메일 인프라
 
-- 프론트엔드(`client/`)는 빌드 후 Nginx가 정적 파일로 서빙, `/api` 경로는 Node.js(Express)로 리버스 프록시하는 구조를 기본으로 한다.
-- Express 서버의 CORS `origin`은 운영 환경에서 `https://23.ecs.li`로 제한한다 (`server/.env` 참고).
-- 메일 서버(Stalwart) 및 SOGo는 Earth Memory 서비스와 별개로 유지되는 인프라이며, 추후 사용자 알림 메일(예: 업로드 완료, 공유 초대) 기능이 추가될 때 연동을 고려한다.
-- Part 10(배포) 단계에서 Nginx 설정 파일(리버스 프록시, HTTPS/SSL, 정적 파일 서빙)을 이 정보를 기준으로 작성한다.
+기존 OCI 서버의 Stalwart Mail Server와 SOGo 웹메일은 Earth Memory 웹 서비스와 별도로 관리한다.

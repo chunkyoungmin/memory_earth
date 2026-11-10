@@ -5,7 +5,7 @@
 사용자가 촬영한 사진을 3D 지구본 위에 기록하는 개인 여행 아카이브 웹 서비스.
 Google Earth처럼 지구를 회전·확대하며, 사진을 업로드하면 EXIF의 GPS/촬영시간을 자동으로 읽어 해당 위치에 핀을 생성한다.
 
-🔗 **Live**: [https://23.ecs.li](https://23.ecs.li)
+🔗 [Earth Memory 열기](https://earth-memory-client.onrender.com/)
 
 ---
 
@@ -46,7 +46,7 @@ React · Vite · Three.js · React Three Fiber · Drei · Tailwind CSS · Framer
 Node.js · Express · PostgreSQL (`pg`) · Multer (업로드) · exifr (EXIF 파싱)
 
 **Infra**
-OCI Ubuntu 24.04 · Nginx (리버스 프록시 + 정적 파일 서빙) · PM2 (프로세스 관리) · Let's Encrypt
+Render 정적 사이트 및 Express API · PostgreSQL · Supabase Storage
 
 서버 인프라 상세: [`docs/server-info.md`](./docs/server-info.md)
 
@@ -87,26 +87,11 @@ psql -d earth_memory -f database/schema.sql
 
 ---
 
-## 📦 배포 (OCI 서버)
+## 📦 Render 배포
 
-코드 수정 후 반영하는 전체 흐름:
+클라이언트 빌드에 `VITE_API_URL=https://earth-memory-server.onrender.com`을 설정하고 `client/dist`를 게시한다. API 서비스에는 `CLIENT_ORIGIN=https://earth-memory-client.onrender.com`을 설정한다.
 
-**로컬에서**
-```bash
-git add .
-git commit -m "설명"
-git push
-```
-
-**서버(SSH)에서**
-```bash
-cd ~/earth-memory
-git pull
-cd server && npm install && pm2 restart earth-memory-server
-cd ../client && npm install && npm run build
-```
-
-Nginx가 `client/dist`를 정적 서빙하고, `/api`·`/uploads` 요청은 Express(포트 4000)로 리버스 프록시한다.
+가입·로그인 페이지 직접 접속과 API 상태 확인 방법은 [운영 주소 문서](./docs/server-info.md)에 있다.
 
 ---
 
