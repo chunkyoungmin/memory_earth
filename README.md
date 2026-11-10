@@ -73,12 +73,17 @@ npm run dev
 ```
 → http://localhost:4000/api/health 로 동작 확인
 
+사진과 여행 API는 로그인 시 발급한 Bearer 토큰으로 소유자를 확인한다.
+관리자 대시보드를 쓰려면 서버 환경 변수 `ADMIN_USER_IDS`에 관리자로 지정할 기존 계정의 숫자 ID를 쉼표로 구분해 넣고 서버를 재시작한다. 비워두면 모든 계정이 일반 사용자로 동작한다.
+
 ### 3. 데이터베이스 (PostgreSQL)
 
 ```bash
 createdb earth_memory
 psql -d earth_memory -f database/schema.sql
 ```
+
+권한 통합 테스트는 `server/`에서 별도 PostgreSQL의 연결 주소를 `TEST_DATABASE_URL`로 설정한 뒤 `npm test`로 실행한다. 로컬 DB에서 TLS를 사용하지 않으면 주소에 `?sslmode=disable`을 붙인다. 테스트는 임시 스키마와 로컬 스토리지 대역을 사용한다.
 
 ---
 
@@ -110,7 +115,7 @@ Nginx가 `client/dist`를 정적 서빙하고, `/api`·`/uploads` 요청은 Expr
 | Method | Endpoint | 설명 |
 |---|---|---|
 | GET | `/api/health` | 서버 상태 확인 |
-| GET | `/api/photos` | GPS 있는 사진 목록 (지도용) |
+| GET | `/api/photos` | 내 위치 지정 사진 목록. `?includeUnlocated=true`로 위치 없는 내 사진도 포함 |
 | POST | `/api/photos/upload` | 사진 업로드 + EXIF 파싱 |
 | PATCH | `/api/photos/:id/location` | 위치 수동 지정 |
 | PATCH | `/api/photos/:id/favorite` | 즐겨찾기 토글 |
@@ -122,7 +127,7 @@ Nginx가 `client/dist`를 정적 서빙하고, `/api`·`/uploads` 요청은 Expr
 | GET | `/api/admin/stats` | 전체 통계 |
 | GET | `/api/admin/photos` | 전체 사진 목록 (관리자) |
 | DELETE | `/api/admin/photos/:id` | 사진 삭제 |
-| GET | `/api/admin/profile` | 프로필 조회 |
+| GET | `/api/auth/profile` | 내 프로필과 사진·여행 수 |
 
 ---
 
@@ -141,7 +146,7 @@ Nginx가 `client/dist`를 정적 서빙하고, `/api`·`/uploads` 요청은 Expr
 | 9 | 관리자 | ✅ |
 | 10 | 배포 | ✅ |
 | - | 즐겨찾기 / 프로필 / 전체 갤러리 | ✅ |
-| - | 로그인·회원가입 (다중 사용자) | 예정 |
+| - | 로그인·회원가입 및 사용자별 API 접근 제어 | ✅ |
 | - | 친구 공유 / 공개 갤러리 | 예정 |
 | - | 모바일 대응 | 예정 |
 
@@ -149,7 +154,6 @@ Nginx가 `client/dist`를 정적 서빙하고, `/api`·`/uploads` 요청은 Expr
 
 ## 📝 향후 개선 예정
 
-- 현재 `userId`가 임시로 `1`번 고정 — 실제 로그인/인증 붙이기
 - 텍스처를 `threejs.org`에서 hotlink 중 — 배포 안정성을 위해 자체 호스팅으로 전환
 - 업로드 저장소를 로컬 디스크 → OCI Object Storage로 이전
 - Three.js 청크 사이즈 최적화 (동적 import / code splitting)

@@ -1,3 +1,6 @@
+import { pool } from '../config/db.js'
+import { supabase } from '../config/supabaseClient.js'
+
 export async function getStats(req, res) {
   try {
     const [users, trips, photos, noGps] = await Promise.all([
@@ -57,7 +60,7 @@ export async function deletePhoto(req, res) {
 
 export async function getProfile(req, res) {
   try {
-    const userId = req.query.userId || 1
+    const userId = req.user.id
     const [user, photoCount, tripCount] = await Promise.all([
       pool.query('SELECT id, email, display_name, created_at FROM users WHERE id = $1', [userId]),
       pool.query('SELECT COUNT(*) FROM photos WHERE user_id = $1', [userId]),

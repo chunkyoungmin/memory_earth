@@ -4,10 +4,10 @@ const MENU_ITEMS = [
   { icon: '🧳', label: '여행', path: '/trips' },
   { icon: '⭐', label: '즐겨찾기', path: '/favorites' },
   { icon: '👤', label: '프로필', path: '/profile' },
-  { icon: '⚙', label: '관리자', path: '/settings' },
+  { icon: '⚙', label: '관리자', path: '/settings', adminOnly: true },
 ]
 
-export default function Sidebar({ onNavigate, onLogout }) {
+export default function Sidebar({ isAdmin, onNavigate, onLogout }) {
   return (
     <aside
       className="fixed top-0 left-0 h-screen w-64 bg-[#161618]/90 backdrop-blur-xl
@@ -20,7 +20,7 @@ export default function Sidebar({ onNavigate, onLogout }) {
       </div>
 
       <nav className="flex flex-col gap-1 px-3">
-        {MENU_ITEMS.map((item) => (
+        {MENU_ITEMS.filter((item) => !item.adminOnly || isAdmin).map((item) => (
           <button
             key={item.path}
             onClick={() => onNavigate(item.path)}

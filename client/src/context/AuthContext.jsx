@@ -19,30 +19,37 @@ export function AuthProvider({ children }) {
   }, [token])
 
   useEffect(() => {
+    let current = true
     if (!token) {
       setLoading(false)
       return
     }
     axios
       .get('/api/auth/me')
-      .then((res) => setUser(res.data.user))
+      .then((res) => { if (current) setUser(res.data.user) })
       .catch(() => {
+        if (!current) return
         setToken(null)
         setUser(null)
       })
-      .finally(() => setLoading(false))
+      .finally(() => { if (current) setLoading(false) })
+    return () => { current = false }
   }, [token])
+
+  function acceptSession({ token, user }) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    setToken(token)
+    setUser(user)
+  }
 
   async function login(email, password) {
     const res = await axios.post('/api/auth/login', { email, password })
-    setToken(res.data.token)
-    setUser(res.data.user)
+    acceptSession(res.data)
   }
 
   async function signup(email, password, displayName) {
     const res = await axios.post('/api/auth/signup', { email, password, displayName })
-    setToken(res.data.token)
-    setUser(res.data.user)
+    acceptSession(res.data)
   }
 
   function logout() {

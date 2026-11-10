@@ -1,6 +1,19 @@
+import 'dotenv/config'
 import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET
+
+export function isAdmin(userId) {
+  const configuredIds = (process.env.ADMIN_USER_IDS || '').split(',').map((id) => id.trim())
+  return Number.isSafeInteger(userId) && userId > 0 && configuredIds.includes(String(userId))
+}
+
+export function requireAdmin(req, res, next) {
+  if (!isAdmin(req.user.id)) {
+    return res.status(403).json({ error: '관리자 권한이 필요합니다.' })
+  }
+  next()
+}
 
 export function requireAuth(req, res, next) {
   const header = req.headers.authorization

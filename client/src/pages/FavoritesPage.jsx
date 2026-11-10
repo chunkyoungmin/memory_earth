@@ -6,7 +6,7 @@ export default function FavoritesPage() {
   const [loading, setLoading] = useState(true)
 
   async function load() {
-    const res = await axios.get('/api/admin/photos')
+    const res = await axios.get('/api/photos', { params: { includeUnlocated: true } })
     setPhotos(res.data.photos.filter((p) => p.is_favorite))
     setLoading(false)
   }

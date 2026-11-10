@@ -28,3 +28,8 @@ CREATE TABLE IF NOT EXISTS photos (
   gps_source TEXT DEFAULT 'exif', -- 'exif' | 'manual'
   created_at TIMESTAMPTZ DEFAULT now()
 );
+
+-- 기존 설치와 새 설치에서 로그인, 즐겨찾기, 여행 순서에 필요한 컬럼을 준비한다.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS is_favorite BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE photos ADD COLUMN IF NOT EXISTS sequence_order INTEGER;

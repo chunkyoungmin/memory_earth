@@ -10,9 +10,10 @@ import {
 
 const router = Router()
 
+router.use(requireAuth)
 router.get('/', listPhotos)
-router.post('/upload', requireAuth, upload.single('photo'), uploadPhoto)
-router.patch('/:id/location', requireAuth, setManualLocation)
-router.patch('/:id/favorite', requireAuth, toggleFavorite)
+router.post('/upload', upload.single('photo'), uploadPhoto)
+router.patch('/:id/location', setManualLocation)
+router.patch('/:id/favorite', toggleFavorite)
 
 export default router

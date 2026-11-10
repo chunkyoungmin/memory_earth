@@ -5,7 +5,7 @@ export default function ProfilePage() {
   const [data, setData] = useState(null)
 
   useEffect(() => {
-    axios.get('/api/admin/profile').then((res) => setData(res.data))
+    axios.get('/api/auth/profile').then((res) => setData(res.data))
   }, [])
 
   if (!data) return <div className="min-h-screen bg-earth-bg text-white p-10">불러오는 중...</div>

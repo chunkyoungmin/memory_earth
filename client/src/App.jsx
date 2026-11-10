@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Routes, Route, Link, useNavigate } from 'react-router-dom'
+import { Routes, Route, Link, Navigate, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import Globe from './components/Globe'
 import Sidebar from './components/Sidebar'
@@ -188,11 +188,15 @@ export default function App() {
   return (
     <>
       <Sidebar
+        isAdmin={user.is_admin}
         onNavigate={(path) => {
           if (path === '/') setActiveTripId(null)
           navigate(path)
         }}
-        onLogout={logout}
+        onLogout={() => {
+          setActiveTripId(null)
+          logout()
+        }}
       />
 
       <div className="pl-64">
@@ -212,7 +216,7 @@ export default function App() {
           />
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<AdminPage />} />
+          <Route path="/settings" element={user.is_admin ? <AdminPage /> : <Navigate to="/" replace />} />
         </Routes>
       </div>
     </>

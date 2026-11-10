@@ -9,7 +9,7 @@ export default function GalleryPage() {
   const [selected, setSelected] = useState(null)
 
   useEffect(() => {
-    axios.get('/api/admin/photos').then((res) => {
+    axios.get('/api/photos', { params: { includeUnlocated: true } }).then((res) => {
       setPhotos(res.data.photos)
       setLoading(false)
     })

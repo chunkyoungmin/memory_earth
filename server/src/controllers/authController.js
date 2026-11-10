@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 import { pool } from '../config/db.js'
+import { isAdmin } from '../middleware/auth.js'
 
 const JWT_SECRET = process.env.JWT_SECRET
 const TOKEN_EXPIRES_IN = '30d'
@@ -32,7 +33,7 @@ export async function signup(req, res) {
     const user = result.rows[0]
     const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: TOKEN_EXPIRES_IN })
 
-    res.status(201).json({ token, user })
+    res.status(201).json({ token, user: { ...user, is_admin: isAdmin(user.id) } })
   } catch (err) {
     console.error('회원가입 실패:', err)
     res.status(500).json({ error: '회원가입 중 오류가 발생했습니다.' })
@@ -65,7 +66,7 @@ export async function login(req, res) {
 
     res.json({
       token,
-      user: { id: user.id, email: user.email, display_name: user.display_name },
+      user: { id: user.id, email: user.email, display_name: user.display_name, is_admin: isAdmin(user.id) },
     })
   } catch (err) {
     console.error('로그인 실패:', err)
@@ -82,7 +83,8 @@ export async function getMe(req, res) {
     if (result.rows.length === 0) {
       return res.status(404).json({ error: '유저를 찾을 수 없습니다.' })
     }
-    res.json({ user: result.rows[0] })
+    const user = result.rows[0]
+    res.json({ user: { ...user, is_admin: isAdmin(user.id) } })
   } catch (err) {
     console.error('내 정보 조회 실패:', err)
     res.status(500).json({ error: '조회 중 오류가 발생했습니다.' })

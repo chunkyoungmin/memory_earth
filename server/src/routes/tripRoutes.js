@@ -10,10 +10,11 @@ import {
 
 const router = Router()
 
-router.get('/', requireAuth, listTrips)
-router.post('/', requireAuth, createTrip)
+router.use(requireAuth)
+router.get('/', listTrips)
+router.post('/', createTrip)
 router.get('/:id/photos', getTripPhotos)
-router.patch('/:id/reorder', requireAuth, reorderTripPhotos)
-router.delete('/:id', requireAuth, deleteTrip)
+router.patch('/:id/reorder', reorderTripPhotos)
+router.delete('/:id', deleteTrip)
 
 export default router
