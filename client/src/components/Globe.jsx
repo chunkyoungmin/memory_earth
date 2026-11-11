@@ -1,7 +1,8 @@
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useState } from 'react'
 import * as Cesium from 'cesium'
 import 'cesium/Build/Cesium/Widgets/widgets.css'
 import { createRoot } from 'react-dom/client'
+import { createMapDetails } from '../utils/mapDetails'
 
 Cesium.Ion.defaultAccessToken = import.meta.env.VITE_CESIUM_TOKEN
 
@@ -42,11 +43,18 @@ export default function Globe({
   tripPhotos = null,
   focusLatLng = null,
   onToggleFavorite,
+  onDetailChange,
 }) {
   const containerRef = useRef(null)
   const viewerRef = useRef(null)
   const entitiesRef = useRef([])
   const popupElRef = useRef(null)
+  const mapDetailsRef = useRef(null)
+  const [mapView, setMapView] = useState({ detailed: false, scale: null })
+  const [mapErrors, setMapErrors] = useState([])
+  const [mapLoading, setMapLoading] = useState(false)
+  const [showEez, setShowEez] = useState(true)
+  const [showTerritorial, setShowTerritorial] = useState(true)
 
   // 최초 생성
   useEffect(() => {
@@ -99,12 +107,35 @@ export default function Globe({
     })
 
     viewerRef.current = viewer
+    camera.percentageChanged = 0.01
+    scene.globe.preloadAncestors = false
+    scene.globe.preloadSiblings = false
+    scene.screenSpaceCameraController.minimumZoomDistance = 150
+    const mapDetails = createMapDetails(viewer, setMapView, setMapErrors, setMapLoading)
+    mapDetailsRef.current = mapDetails
 
     return () => {
+      mapDetails.destroy()
+      mapDetailsRef.current = null
       viewer.destroy()
       viewerRef.current = null
     }
   }, [])
+
+  useEffect(() => {
+    onDetailChange?.(mapView.detailed)
+  }, [mapView.detailed, onDetailChange])
+
+  useEffect(() => {
+    mapDetailsRef.current?.setVisible('eez', showEez)
+    mapDetailsRef.current?.setVisible('territorial', showTerritorial)
+  }, [showEez, showTerritorial])
+
+  function zoom(direction) {
+    const camera = viewerRef.current?.camera
+    if (!camera) return
+    camera.zoomIn(direction * camera.positionCartographic.height * 0.45)
+  }
 
   // 지구본 클릭 -> 위치 수동 지정
   useEffect(() => {
@@ -226,5 +257,49 @@ export default function Globe({
     })
   }, [focusLatLng])
 
-  return <div ref={containerRef} className="w-full h-full relative" />
+  return (
+    <div className="w-full h-full relative">
+      <div ref={containerRef} className="w-full h-full" />
+
+      <div className="absolute right-4 top-1/2 z-20 -translate-y-1/2 flex flex-col overflow-hidden rounded-xl border border-white/20 bg-[#101c26]/95 text-white shadow-lg">
+        <button type="button" onClick={() => zoom(1)} aria-label="지도 확대" className="w-11 h-11 text-2xl hover:bg-white/10">+</button>
+        <button type="button" onClick={() => zoom(-1)} aria-label="지도 축소" className="w-11 h-11 text-2xl border-t border-white/15 hover:bg-white/10">−</button>
+      </div>
+
+      {mapView.detailed && (
+        <div className="absolute left-4 bottom-24 z-20 max-w-[calc(100%-5rem)] rounded-xl border border-white/15 bg-[#101c26]/95 px-3 py-2 text-white shadow-lg">
+          <details>
+            <summary className="cursor-pointer py-1 text-sm">해양 경계</summary>
+            <div className="pt-2 flex flex-col gap-2 text-sm">
+              <label className="flex items-center gap-2 py-1">
+                <input type="checkbox" checked={showEez} onChange={(event) => setShowEez(event.target.checked)} />
+                배타적 경제수역 (EEZ)
+              </label>
+              <label className="flex items-center gap-2 py-1">
+                <input type="checkbox" checked={showTerritorial} onChange={(event) => setShowTerritorial(event.target.checked)} />
+                영해 (12해리) · 해안 확대 시
+              </label>
+              <p className="text-xs text-white/70">중첩·미확정 경계 포함</p>
+              <a href="https://www.marineregions.org/eezmethodology.php" target="_blank" rel="noreferrer" className="text-xs text-cyan-200 underline">Marine Regions 경계 자료</a>
+            </div>
+          </details>
+          {mapView.scale && (
+            <div className="pt-2 pb-1" aria-label={`지도 축척 ${mapView.scale.label}`}>
+              <span className="text-xs">{mapView.scale.label}</span>
+              <div style={{ width: mapView.scale.width }} className="h-1.5 border-x border-b border-white/80" />
+            </div>
+          )}
+          {mapErrors.length > 0 && (
+            <p className="mt-2 max-w-52 text-xs text-amber-200" role="status">
+              {mapErrors.join(', ')} 일부를 불러오지 못했어요.{' '}
+              <button type="button" onClick={() => mapDetailsRef.current?.retry()} className="underline py-1">다시 시도</button>
+            </p>
+          )}
+          {mapLoading && mapErrors.length === 0 && (
+            <p role="status" className="pt-1 text-xs text-white/70">지도 불러오는 중…</p>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }

@@ -19,11 +19,12 @@ import SignupPage from './pages/SignupPage'
 const REPLAY_STEP_MS = 3000
 
 function PublicHome() {
+  const [mapDetailed, setMapDetailed] = useState(false)
   return (
     <div className="w-full h-screen relative overflow-hidden bg-earth-bg">
-      <Globe />
+      <Globe onDetailChange={setMapDetailed} />
 
-      <header className="absolute top-0 inset-x-0 z-10 flex items-center justify-between px-6 py-5">
+      <header className="absolute top-0 inset-x-0 z-10 flex items-center justify-between bg-gradient-to-b from-[#101c26]/90 to-transparent px-6 py-5">
         <span className="text-white text-lg font-semibold tracking-tight">🌍 Earth Memory</span>
         <div className="flex items-center gap-3 text-sm">
           <Link to="/login" className="rounded-lg px-3 py-2 text-white/80 hover:text-white">
@@ -35,7 +36,7 @@ function PublicHome() {
         </div>
       </header>
 
-      <main className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
+      <main hidden={mapDetailed} className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
         <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-6xl">Earth Memory</h1>
         <p className="mt-3 text-sm text-white/60 sm:text-base">Every Photo Has A Place.</p>
       </main>
@@ -44,6 +45,7 @@ function PublicHome() {
 }
 
 function Home({ activeTripId }) {
+  const [mapDetailed, setMapDetailed] = useState(false)
   const { photos, addOrUpdatePhoto, setPhotoLocation, toggleFavorite } = usePhotos()
   const [placingPhotoId, setPlacingPhotoId] = useState(null)
   const [tripPhotos, setTripPhotos] = useState(null)
@@ -118,9 +120,10 @@ function Home({ activeTripId }) {
         tripPhotos={tripPhotos}
         focusLatLng={focusLatLng}
         onToggleFavorite={toggleFavorite}
+        onDetailChange={setMapDetailed}
       />
 
-      {!replaying && !tripPhotos && (
+      {!replaying && !tripPhotos && !mapDetailed && (
         <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1">
           <h1 className="text-white text-2xl font-semibold tracking-tight">Earth Memory</h1>
           <p className="text-white/50 text-sm">Every Photo Has A Place.</p>
