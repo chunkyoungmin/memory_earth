@@ -36,9 +36,9 @@ function PublicHome() {
         </div>
       </header>
 
-      <main hidden={mapDetailed} className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center">
+      <main hidden={mapDetailed} className="pointer-events-none absolute inset-x-0 top-1/2 z-10 -translate-y-1/2 text-center" style={{ textShadow: '0 2px 4px #101c26, 0 0 20px #101c26' }}>
         <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-6xl">Earth Memory</h1>
-        <p className="mt-3 text-sm text-white/60 sm:text-base">Every Photo Has A Place.</p>
+        <p className="mt-3 text-sm text-white/90 sm:text-base">Every Photo Has A Place.</p>
       </main>
     </div>
   )
@@ -124,9 +124,9 @@ function Home({ activeTripId }) {
       />
 
       {!replaying && !tripPhotos && !mapDetailed && (
-        <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1">
+        <div className="pointer-events-none absolute inset-x-0 top-24 flex flex-col items-center gap-1" style={{ textShadow: '0 2px 4px #101c26, 0 0 20px #101c26' }}>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Earth Memory</h1>
-          <p className="text-white/50 text-sm">Every Photo Has A Place.</p>
+          <p className="text-white/90 text-sm">Every Photo Has A Place.</p>
         </div>
       )}
 

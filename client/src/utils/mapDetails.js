@@ -31,7 +31,8 @@ function getScale(viewer) {
   }
 }
 
-// Providers request only visible tiles. Keep the dusk globe underneath for distant views.
+// One cartographic base keeps land and ocean colors consistent at every zoom level.
+// Providers request only visible tiles; maritime overlays still fade in on zoom.
 export function createMapDetails(viewer, onViewChange, onErrorChange, onLoadingChange) {
   const marineCredit = new Cesium.Credit(
     '<a href="https://www.marineregions.org/" target="_blank" rel="noopener noreferrer">Marine Regions / VLIZ</a> (CC BY)',
@@ -40,7 +41,7 @@ export function createMapDetails(viewer, onViewChange, onErrorChange, onLoadingC
   const sources = [
     {
       key: 'streets',
-      name: '지명·도로',
+      name: '기본 지도',
       enabled: true,
       createProvider: () => new Cesium.OpenStreetMapImageryProvider({
         url: 'https://tile.openstreetmap.org/',
@@ -79,7 +80,7 @@ export function createMapDetails(viewer, onViewChange, onErrorChange, onLoadingC
       enablePickFeatures: false,
       credit: marineCredit,
     })
-    source.layer = new Cesium.ImageryLayer(provider, { show: false })
+    source.layer = new Cesium.ImageryLayer(provider, { show: source.key === 'streets' })
     viewer.imageryLayers.add(source.layer)
     source.removeErrorListener = provider.errorEvent.addEventListener((error) => {
       if (disposed) return
@@ -98,15 +99,11 @@ export function createMapDetails(viewer, onViewChange, onErrorChange, onLoadingC
       (DETAIL_START_HEIGHT - height) / (DETAIL_START_HEIGHT - DETAIL_FULL_HEIGHT), 0, 1,
     )
     const detailed = amount > 0
-    const [streets, territorial, eez] = sources
-    streets.layer.show = detailed
-    streets.layer.alpha = amount
+    const [, territorial, eez] = sources
     territorial.layer.show = territorial.enabled && height < TERRITORIAL_START_HEIGHT
     territorial.layer.alpha = 0.22
     eez.layer.show = eez.enabled && detailed
     eez.layer.alpha = amount
-    // Printed map labels need even illumination on either side of the globe.
-    viewer.scene.globe.enableLighting = amount < 1
     viewer.scene.globe.maximumScreenSpaceError = detailed ? 1 : 2
     onViewChange({ detailed, scale: detailed ? getScale(viewer) : null })
   }

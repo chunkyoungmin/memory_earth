@@ -71,9 +71,8 @@ export default function Globe({
       fullscreenButton: false,
       infoBox: false,
       selectionIndicator: false,
-      baseLayer: Cesium.ImageryLayer.fromProviderAsync(
-        Cesium.SingleTileImageryProvider.fromUrl('/textures/earth-dusk.jpg')
-      ),
+      // createMapDetails owns the same cartographic base at every zoom level.
+      baseLayer: false,
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     })
 
@@ -82,20 +81,12 @@ export default function Globe({
     scene.moon.show = false
     scene.sun.show = false
     scene.backgroundColor = Cesium.Color.fromCssColorString('#101c26')
-    scene.globe.baseColor = Cesium.Color.fromCssColorString('#234657')
+    scene.globe.baseColor = Cesium.Color.fromCssColorString('#aad3df')
     scene.skyAtmosphere.saturationShift = -0.65
     scene.skyAtmosphere.brightnessShift = -0.45
     scene.globe.showGroundAtmosphere = false
-    scene.globe.enableLighting = true
-    // 고정된 오후의 빛과 완만한 음영으로 반대편의 사진도 읽을 수 있게 한다.
-    const lightOrigin = Cesium.Cartesian3.fromDegrees(77, 42)
-    const direction = Cesium.Cartesian3.normalize(lightOrigin, new Cesium.Cartesian3())
-    scene.light = new Cesium.DirectionalLight({
-      direction: Cesium.Cartesian3.negate(direction, direction),
-      color: Cesium.Color.fromCssColorString('#fff0df'),
-    })
-    scene.globe.lightingFadeOutDistance = 7_000_000
-    scene.globe.lightingFadeInDistance = 65_000_000
+    // 일정한 조명으로 지구본과 확대 지도의 바다·육지 색을 유지한다.
+    scene.globe.enableLighting = false
 
     // 짧은 화면 변을 기준으로 지구의 전체 윤곽을 담는다.
     const frustum = camera.frustum
@@ -266,9 +257,9 @@ export default function Globe({
         <button type="button" onClick={() => zoom(-1)} aria-label="지도 축소" className="w-11 h-11 text-2xl border-t border-white/15 hover:bg-white/10">−</button>
       </div>
 
-      {mapView.detailed && (
+      {(mapView.detailed || mapErrors.length > 0 || mapLoading) && (
         <div className="absolute left-4 bottom-24 z-20 max-w-[calc(100%-5rem)] rounded-xl border border-white/15 bg-[#101c26]/95 px-3 py-2 text-white shadow-lg">
-          <details>
+          {mapView.detailed && <details>
             <summary className="cursor-pointer py-1 text-sm">해양 경계</summary>
             <div className="pt-2 flex flex-col gap-2 text-sm">
               <label className="flex items-center gap-2 py-1">
@@ -282,7 +273,7 @@ export default function Globe({
               <p className="text-xs text-white/70">중첩·미확정 경계 포함</p>
               <a href="https://www.marineregions.org/eezmethodology.php" target="_blank" rel="noreferrer" className="text-xs text-cyan-200 underline">Marine Regions 경계 자료</a>
             </div>
-          </details>
+          </details>}
           {mapView.scale && (
             <div className="pt-2 pb-1" aria-label={`지도 축척 ${mapView.scale.label}`}>
               <span className="text-xs">{mapView.scale.label}</span>
